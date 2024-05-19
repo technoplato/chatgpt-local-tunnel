@@ -81,7 +81,7 @@ paths:
                     example: "Test run error message"
   /all-files:
     get:
-      summary: Run the `npm run all` command and return the output
+      summary: Return all the files in the project along with their directory structure.
       operationId: getAllFiles
       parameters:
         - in: query
@@ -119,7 +119,7 @@ paths:
   /all-tests:
     get:
       summary: Run all Jest tests and return the output
-      operationId: getAllTests
+      operationId: runAllTests
       responses:
         "200":
           description: Test output retrieved successfully
@@ -141,10 +141,10 @@ paths:
                   error:
                     type: string
                     example: "Test run error message"
-  /commit-files:
+  /propose-changes:
     post:
       summary: Commit file changes with a commit message, run tests, and return the results
-      operationId: commitFiles
+      operationId: proposeChanges
       requestBody:
         required: true
         content:
@@ -189,7 +189,7 @@ paths:
                     example: "Commit and test run error message"
   /select-files:
     post:
-      summary: Select a set of files to retrieve later
+      summary: Select a set of files to retrieve later. Used to limit amount of content returned to caller.
       operationId: selectFiles
       requestBody:
         required: true
