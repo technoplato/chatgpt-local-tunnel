@@ -1,0 +1,176 @@
+openapi: 3.0.0
+info:
+  title: GPT Custom Server API
+  version: 1.0.0
+  description: This API allows a custom GPT instance to interact with files and run Jest tests programmatically.
+servers:
+  - url: https://everydaywetunnelin.ngrok.io
+    description: ngrok public URL
+    variables:
+      subdomain:
+        default: your_subdomain
+paths:
+  /file:
+    get:
+      summary: Fetch the contents of the file
+      operationId: getFileContents
+      responses:
+        "200":
+          description: File contents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    example: "test('simple test', () => { expect(true).toBe(false); });"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "File read error message"
+    post:
+      summary: Send the file with changes, apply changes locally, run Jest tests, and return the test results
+      operationId: postFileChanges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  example: "test('simple test', () => { expect(true).toBe(true); });"
+      responses:
+        "200":
+          description: Test results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: string
+                    example: "PASS  ./example.spec.ts\n  simple test\n    ✓ simple test (2 ms)"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Test run error message"
+  /all-files:
+    get:
+      summary: Run the `npm run all` command and return the output
+      operationId: getAllFiles
+      responses:
+        "200":
+          description: Command output retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    example: "Directory structure:\n\n├── Dockerfile\n├── docker-compose.yaml\n..."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Command execution error message"
+  /all-tests:
+    get:
+      summary: Run all Jest tests and return the output
+      operationId: getAllTests
+      responses:
+        "200":
+          description: Test output retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: string
+                    example: "PASS  ./example.spec.js\n  simple test\n    ✓ simple test (2 ms)"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Test run error message"
+  /commit-files:
+    post:
+      summary: Commit file changes with a commit message, run tests, and return the results
+      operationId: commitFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commitMessage:
+                  type: string
+                  example: "Updated test case to expect true"
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      filePath:
+                        type: string
+                        example: "example.spec.js"
+                      content:
+                        type: string
+                        example: "test('simple test', () => { expect(true).toBe(true); });"
+      responses:
+        "200":
+          description: Test results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: string
+                    example: "PASS  ./example.spec.js\n  simple test\n    ✓ simple test (2 ms)"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Commit and test run error message"
+components:
+  schemas: {}
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []

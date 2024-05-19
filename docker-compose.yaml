@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  server:
+    build: .
+    environment:
+      - PROJECT_PATH=${PROJECT_PATH}
+    volumes:
+      - ${PROJECT_PATH}:/usr/src/project
+      - .:/usr/src/app
+    ports:
+      - "3000:3000"
+    command: nodemon --watch . /usr/src/app/server.js
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http  server:3000  --authtoken ${NGROK_AUTH} --subdomain ${NGROK_DOMAIN}
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+    depends_on:
+      - server

@@ -1,0 +1,5 @@
+{
+  "watch": ["server.js", "internal-directory"],
+  "ext": "js,json",
+  "ignore": ["node_modules", "/external/project"]
+}
