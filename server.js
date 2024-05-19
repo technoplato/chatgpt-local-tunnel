@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { runCLI } = require('jest');
 const simpleGit = require('simple-git');
+const { exec } = require('child_process');
+
 require('dotenv').config();
 
 const {
@@ -46,6 +48,36 @@ app.get('/selected-files', (req, res) => {
   });
 
   res.json({ allFileContents });
+});
+
+app.post('/run-command', async (req, res) => {
+  const { command, commitMessage } = req.body;
+  if (!command || !commitMessage) {
+    return res
+      .status(400)
+      .json({ error: 'Command and commit message are required' });
+  }
+
+  exec(command, { cwd: externalProjectPath }, async (err, stdout, stderr) => {
+    if (err) {
+      return res.status(500).json({ error: stderr });
+    }
+
+    const git = simpleGit(externalProjectPath);
+
+    try {
+      // Add and commit the changes
+      await git.add('.');
+      await git.commit(commitMessage);
+
+      res.json({
+        message: 'Command executed and changes committed successfully',
+        output: stdout,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 });
 
 app.get('/file', (req, res) => {

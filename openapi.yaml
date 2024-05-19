@@ -264,6 +264,57 @@ paths:
                   error:
                     type: string
                     example: "File read error message"
+  /run-command:
+    post:
+      summary: Run an arbitrary shell command and commit changes
+      operationId: runCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  example: "npm install xstate"
+                commitMessage:
+                  type: string
+                  example: "Installed xstate package"
+      responses:
+        "200":
+          description: Command executed and changes committed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Command executed and changes committed successfully"
+                  output:
+                    type: string
+                    example: "Output of the command"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Command and commit message are required"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error executing command or committing changes"
 components:
   schemas: {}
   securitySchemes:
@@ -273,4 +324,3 @@ components:
       bearerFormat: JWT
 security:
   - bearerAuth: []
-
