@@ -131,8 +131,8 @@ function getGitConfig(projectPath) {
 }
 
 app.post('/propose-changes', async (req, res) => {
-  const { projectPath, commitMessage, files } = req.body;
-  const resolvedProjectPath = path.resolve(externalProjectPath, projectPath);
+  const { commitMessage, files } = req.body;
+  const resolvedProjectPath = path.resolve(externalProjectPath);
   const git = simpleGit(resolvedProjectPath);
 
   try {
