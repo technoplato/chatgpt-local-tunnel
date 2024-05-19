@@ -15,6 +15,39 @@ app.use(bodyParser.json());
 
 const externalProjectPath = '/usr/src/project';
 
+let selectedFiles = [];
+
+// Endpoint to select files
+app.post('/select-files', (req, res) => {
+  const { files } = req.body;
+  if (!Array.isArray(files)) {
+    return res.status(400).json({ error: 'Files should be an array' });
+  }
+  selectedFiles = files;
+  res.json({ message: 'Files selected successfully', selectedFiles });
+});
+
+// Endpoint to get the contents of selected files
+app.get('/selected-files', (req, res) => {
+  if (selectedFiles.length === 0) {
+    return res.status(400).json({ error: 'No files selected' });
+  }
+
+  let allFileContents = 'Contents of selected files:\n\n';
+  selectedFiles.forEach((filePath) => {
+    const fullFilePath = path.join(externalProjectPath, filePath);
+    if (fs.existsSync(fullFilePath)) {
+      const content = fs.readFileSync(fullFilePath, 'utf8');
+      allFileContents += `### ${filePath} ###\n\n`;
+      allFileContents += content + '\n\n';
+    } else {
+      allFileContents += `### ${filePath} ###\n\nFile not found\n\n`;
+    }
+  });
+
+  res.json({ allFileContents });
+});
+
 app.get('/file', (req, res) => {
   const filePath = path.join(externalProjectPath, req.query.filePath);
   fs.readFile(filePath, 'utf8', (err, data) => {

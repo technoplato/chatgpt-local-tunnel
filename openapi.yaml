@@ -14,6 +14,13 @@ paths:
     get:
       summary: Fetch the contents of the file
       operationId: getFileContents
+      parameters:
+        - in: query
+          name: filePath
+          required: true
+          schema:
+            type: string
+          description: The path of the file to fetch
       responses:
         "200":
           description: File contents retrieved successfully
@@ -45,6 +52,9 @@ paths:
             schema:
               type: object
               properties:
+                filePath:
+                  type: string
+                  example: "example.spec.js"
                 content:
                   type: string
                   example: "test('simple test', () => { expect(true).toBe(true); });"
@@ -73,6 +83,12 @@ paths:
     get:
       summary: Run the `npm run all` command and return the output
       operationId: getAllFiles
+      parameters:
+        - in: query
+          name: directory
+          schema:
+            type: string
+          description: The directory to list the files from
       responses:
         "200":
           description: Command output retrieved successfully
@@ -81,9 +97,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  content:
-                    type: string
-                    example: "Directory structure:\n\n├── Dockerfile\n├── docker-compose.yaml\n..."
+                  files:
+                    type: object
+                    properties:
+                      allFileContents:
+                        type: string
+                        example: "Directory structure:\n\n├── Dockerfile\n├── docker-compose.yaml\n..."
+                      fileTree:
+                        type: string
+                        example: "├── Dockerfile\n├── docker-compose.yaml\n..."
         "500":
           description: Server error
           content:
@@ -165,6 +187,83 @@ paths:
                   error:
                     type: string
                     example: "Commit and test run error message"
+  /select-files:
+    post:
+      summary: Select a set of files to retrieve later
+      operationId: selectFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Dockerfile", "server.js", "scripts/outputRepoContents.js"]
+      responses:
+        "200":
+          description: Files selected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Files selected successfully"
+                  selectedFiles:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Dockerfile", "server.js", "scripts/outputRepoContents.js"]
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Files should be an array"
+  /selected-files:
+    get:
+      summary: Retrieve the contents of selected files
+      operationId: getSelectedFiles
+      responses:
+        "200":
+          description: Selected files contents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allFileContents:
+                    type: string
+                    example: "Contents of selected files:\n\n### Dockerfile ###\n\n...file content...\n\n### server.js ###\n\n...file content...\n\n### scripts/outputRepoContents.js ###\n\n...file content...\n\n"
+        "400":
+          description: No files selected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No files selected"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "File read error message"
 components:
   schemas: {}
   securitySchemes:
@@ -174,3 +273,4 @@ components:
       bearerFormat: JWT
 security:
   - bearerAuth: []
+
