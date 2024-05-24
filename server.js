@@ -228,11 +228,11 @@ async function runTests(projectPath) {
 
 const port = 3000;
 app.listen(port, () => {
-  const { allFileContents, fileTree } =
-    createDirectoryContentsString(externalProjectPath);
-
-  console.log(allFileContents);
-  console.log(fileTree);
+  // const { allFileContents, fileTree } =
+  //   createDirectoryContentsString(externalProjectPath);
+  //
+  // console.log(allFileContents);
+  // console.log(fileTree);
 
   console.log(`Server running on port ${port}`);
 });
