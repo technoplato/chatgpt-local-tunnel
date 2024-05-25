@@ -15,7 +15,8 @@ const {
 const app = express();
 app.use(bodyParser.json());
 
-const externalProjectPath = '/usr/src/project';
+const externalProjectPath = '/usr/src/project/src';
+
 
 let selectedFiles = [];
 

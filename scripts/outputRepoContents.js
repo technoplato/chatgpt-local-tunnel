@@ -219,8 +219,9 @@ function createDirectoryContentsString(directory) {
   //   allFileContents += `### ${file} ###\n\n`;
   //   allFileContents += content + '\n\n';
   // });
+  console.log('Filetree charactere length: ', fileTree.length);
 
-  return { allFileContents:'WIP IGNORE', fileTree, fileList: 'WIP IGNORE' };
+  return { allFileContents:'WIP IGNORE', fileTree, fileList};
 }
 
 module.exports = { createDirectoryContentsString };
