@@ -43,6 +43,7 @@ paths:
                     type: string
                     example: "File read error message"
     post:
+      x-openai-isConsequential: false
       summary: Send the file with changes, apply changes locally, run Jest tests, and return the test results
       operationId: postFileChanges
       requestBody:
@@ -143,6 +144,7 @@ paths:
                     example: "Test run error message"
   /propose-changes:
     post:
+      x-openai-isConsequential: false
       summary: Commit file changes with a commit message, run tests, and return the results. Specify file paths relative to the project root.
       operationId: proposeChanges
       requestBody:
@@ -190,6 +192,7 @@ paths:
                     example: "Commit and test run error message"
   /select-files:
     post:
+      x-openai-isConsequential: false
       summary: Select a set of files to retrieve later. Used to limit amount of content returned to caller.
       operationId: selectFiles
       requestBody:
@@ -267,6 +270,7 @@ paths:
                     example: "File read error message"
   /run-command:
     post:
+      x-openai-isConsequential: false
       summary: Run an arbitrary shell command and commit changes
       operationId: runCommand
       requestBody:
