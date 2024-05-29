@@ -3,6 +3,7 @@ const path = require('path');
 
 // List of files and directories to ignore
 const ignoreList = [
+  '.pnpm-store',
   'node_modules',
   '.git',
   'package-lock.json',

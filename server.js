@@ -2,15 +2,40 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const { runCLI } = require('jest');
+// const { runCLI } = require('jest');
+// async function runTests(projectPath) {
+//   const options = {
+//     runInBand: true,
+//     testPathPattern: projectPath,
+//   };
+//
+//   const { results } = await runCLI(options, [projectPath]);
+//   logger.info('Tests run successfully', { projectPath });
+//   return results;
+// }
+
 const simpleGit = require('simple-git');
 const { exec } = require('child_process');
+const winston = require('winston');
 
 require('dotenv').config();
 
 const {
   createDirectoryContentsString,
 } = require('./scripts/outputRepoContents.js');
+
+// Configure logger
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'server.log' }),
+    new winston.transports.Console(),
+  ],
+});
 
 const app = express();
 app.use(bodyParser.json());
@@ -23,15 +48,18 @@ let selectedFiles = [];
 app.post('/select-files', (req, res) => {
   const { files } = req.body;
   if (!Array.isArray(files)) {
+    logger.error('Files should be an array');
     return res.status(400).json({ error: 'Files should be an array' });
   }
   selectedFiles = files;
+  logger.info('Files selected successfully', { selectedFiles });
   res.json({ message: 'Files selected successfully', selectedFiles });
 });
 
 // Endpoint to get the contents of selected files
 app.get('/selected-files', (req, res) => {
   if (selectedFiles.length === 0) {
+    logger.error('No files selected');
     return res.status(400).json({ error: 'No files selected' });
   }
 
@@ -47,19 +75,30 @@ app.get('/selected-files', (req, res) => {
     }
   });
 
+  logger.info('Selected files contents retrieved');
   res.json({ allFileContents });
 });
 
 app.post('/run-command', async (req, res) => {
   const { command, commitMessage } = req.body;
+  logger.info('-------------------------------------------------------------');
+  logger.info(`Command: ${command}`);
+  logger.info(`Commit message: ${commitMessage}`);
+  logger.info('-------------------------------------------------------------');
   if (!command || !commitMessage) {
-    return res
-      .status(400)
-      .json({ error: 'Command and commit message are required' });
+    logger.error('Command and commit message are required');
+    return res.status(400).json({ error: 'Command and commit message are required' });
+  }
+
+  // Check if the directory exists
+  if (!fs.existsSync(externalProjectPath)) {
+    logger.error(`Directory ${externalProjectPath} does not exist`);
+    return res.status(400).json({ error: `Directory ${externalProjectPath} does not exist` });
   }
 
   exec(command, { cwd: externalProjectPath }, async (err, stdout, stderr) => {
     if (err) {
+      logger.error('Command execution error', { stderr });
       return res.status(500).json({ error: stderr });
     }
 
@@ -70,11 +109,13 @@ app.post('/run-command', async (req, res) => {
       await git.add('.');
       await git.commit(commitMessage);
 
+      logger.info('Command executed and changes committed successfully', { stdout });
       res.json({
         message: 'Command executed and changes committed successfully',
         output: stdout,
       });
     } catch (error) {
+      logger.error('Git commit error', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -84,8 +125,10 @@ app.get('/file', (req, res) => {
   const filePath = path.join(externalProjectPath, req.query.filePath);
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) {
+      logger.error('File read error', { error: err.message });
       return res.status(500).json({ error: err.message });
     }
+    logger.info('File content retrieved', { filePath });
     res.json({ content: data });
   });
 });
@@ -94,15 +137,25 @@ app.post('/file', async (req, res) => {
   const { filePath, content } = req.body;
   const fullFilePath = path.join(externalProjectPath, filePath);
 
+  // Check if the directory exists
+  const dir = path.dirname(fullFilePath);
+  if (!fs.existsSync(dir)) {
+    logger.error(`Directory ${dir} does not exist`);
+    return res.status(400).json({ error: `Directory ${dir} does not exist` });
+  }
+
   fs.writeFile(fullFilePath, content, 'utf8', async (err) => {
     if (err) {
+      logger.error('File write error', { error: err.message });
       return res.status(500).json({ error: err.message });
     }
 
     try {
       const testResults = await runTests(fullFilePath);
+      logger.info('File written and tests run successfully', { filePath });
       res.json({ results: testResults });
     } catch (error) {
+      logger.error('Test run error', { error: error.message });
       res.status(500).json({ error: error.message });
     }
   });
@@ -111,20 +164,24 @@ app.post('/file', async (req, res) => {
 app.get('/all-files', (req, res) => {
   const directory = req.query.directory || externalProjectPath;
   if (!fs.existsSync(directory)) {
+    logger.error(`Directory ${directory} does not exist`);
     return res
       .status(400)
       .json({ error: `Directory ${directory} does not exist` });
   }
 
   const files = createDirectoryContentsString(directory);
+  logger.info('All files retrieved', { directory });
   res.json({ files });
 });
 
 app.get('/all-tests', async (req, res) => {
   try {
     const testResults = await runTests(externalProjectPath);
+    logger.info('All tests run successfully');
     res.json({ results: testResults });
   } catch (error) {
+    logger.error('Test run error', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -132,7 +189,7 @@ app.get('/all-tests', async (req, res) => {
 function logDirectoryTree(dir, depth = 0) {
   if (depth > 2) return; // Limit the depth to avoid too much output
   const prefix = ' '.repeat(depth * 2);
-  console.log(`${prefix}${dir}`);
+  logger.info(`${prefix}${dir}`);
   const items = fs.readdirSync(dir);
   items.forEach((item) => {
     const itemPath = path.join(dir, item);
@@ -140,7 +197,7 @@ function logDirectoryTree(dir, depth = 0) {
     if (stats.isDirectory()) {
       logDirectoryTree(itemPath, depth + 1);
     } else {
-      console.log(`${prefix}  ${item}`);
+      logger.info(`${prefix}  ${item}`);
     }
   });
 }
@@ -170,12 +227,10 @@ app.post('/propose-changes', async (req, res) => {
   try {
     // Ensure the project directory exists
     if (!fs.existsSync(resolvedProjectPath)) {
-      console.log(`Project path ${resolvedProjectPath} does not exist`);
-      console.log('Current directory tree:');
+      logger.error(`Project path ${resolvedProjectPath} does not exist`);
+      logger.info('Current directory tree:');
       logDirectoryTree(path.resolve(resolvedProjectPath, '..')); // Log the parent directory tree
-      return res
-        .status(400)
-        .json({ error: `Project path ${resolvedProjectPath} does not exist` });
+      return res.status(400).json({ error: `Project path ${resolvedProjectPath} does not exist` });
     }
 
     // Write each file
@@ -192,38 +247,31 @@ app.post('/propose-changes', async (req, res) => {
       fs.writeFileSync(fullPath, file.content, 'utf8');
     });
 
-    // Read Git config
-    const gitConfig = getGitConfig(resolvedProjectPath);
-    if (!gitConfig) {
-      return res
-        .status(500)
-        .json({ error: 'Git user configuration not found in the project' });
-    }
-
-    // Temporarily set Git user configuration
-    await git.addConfig('user.name', gitConfig.name);
-    await git.addConfig('user.email', gitConfig.email);
-
     // Add and commit the changes
     await git.add('.');
     await git.commit(commitMessage);
 
     // Run tests
     const testResults = await runTests(resolvedProjectPath);
+    logger.info('Changes proposed and tests run successfully', { commitMessage });
     res.json({ results: testResults });
   } catch (error) {
+    logger.error('Propose changes error', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
 
 async function runTests(projectPath) {
-  const options = {
-    runInBand: true,
-    testPathPattern: projectPath,
-  };
-
-  const { results } = await runCLI(options, [projectPath]);
-  return results;
+  return new Promise((resolve, reject) => {
+    exec('npm test', { cwd: path.resolve(projectPath) }, (error, stdout, stderr) => {
+      if (error) {
+        logger.error('Error running tests', { error, stderr });
+        return reject(stderr);
+      }
+      logger.info('Tests run successfully', { stdout });
+      resolve(stdout);
+    });
+  });
 }
 
 const port = 3000;
@@ -231,8 +279,8 @@ app.listen(port, () => {
   const { allFileContents, fileTree } =
     createDirectoryContentsString(externalProjectPath);
 
-  console.log(allFileContents);
-  console.log(fileTree);
+  logger.info(allFileContents);
+  logger.info(fileTree);
 
-  console.log(`Server running on port ${port}`);
+  logger.info(`Server running on port ${port}`);
 });

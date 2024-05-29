@@ -1,0 +1,48 @@
+First we need to establish goals
+
+create git branch
+
+write plan with todo items in PLANS/<plan name>.md
+ - within each todo, write acceptance criteria for
+   what you want to occur in order to consider this done
+   - gpt will provide a unique string of 8
+     alphanumeric characters to
+     identify each todo such as 9j0dajal that will be
+     prepended to each todo
+   - this could be a npm command outputting some values
+   - a test passing
+   - output from the command line, etc
+ - once the criteria has been achieved, mark that todo
+   as done, commit the files with the prefix specified
+   above (9j0dajal in this case) to the beginning of
+   the commit message within square brackets [9j0dajal]
+ - provide feedback to the gpt after one attempt at
+   each iteration
+   - the gpt will provide either a shell script or
+     command to provide output that it will then check
+     if it satisifes what it wanted to see from that
+     output.
+
+Once all criteria have been defined, we will begin
+iterating on the feature.
+
+If criteria need to be defined AFTER we've begun
+iterating, we can provide ADDENDA at the top of our
+plan in #### fences like this:
+
+############################################################
+# ADDENDA
+############################################################
+
+[sbs8kkoa] We forgot to specify we should florgon our
+blorgon
+ - [] ensure florgon blorgons
+ -- acceptance criteria: ./florgon contains "blorgon
+ success"
+
+############################################################
+# END ADDENDA
+############################################################
+
+
+
