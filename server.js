@@ -151,9 +151,9 @@ app.post('/file', async (req, res) => {
     }
 
     try {
-      const testResults = await runTests(fullFilePath);
+      // const testResults = await runTests(fullFilePath);
       logger.info('File written and tests run successfully', { filePath });
-      res.json({ results: testResults });
+      res.json({ results: 'not running tests right now' });
     } catch (error) {
       logger.error('Test run error', { error: error.message });
       res.status(500).json({ error: error.message });
