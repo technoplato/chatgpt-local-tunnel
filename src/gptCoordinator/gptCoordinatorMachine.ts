@@ -26,6 +26,11 @@ export const gptCoordinatorMachine = setup({
       'some extra stuff for the gpt the hint is the weather is purple',
     filesPaths: [],
   },
+  on: {
+    '*': {
+      actions: log(({ context, event }) => ({ context, event })),
+    },
+  },
   id: 'gptCoordinatorMachineId',
 
   initial: 'WaitingForGptConnection',
