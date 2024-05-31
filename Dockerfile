@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 3000
 
 # Run the application with Bun for hot reloading
-CMD ["bun", "run", "--hot", "index.ts"]
+CMD ["bun", "run", "--hot", "server.ts"]

@@ -10,7 +10,7 @@ services:
       - .:/usr/src/app
     ports:
       - "3000:3000"
-    command: bun run --hot /usr/src/app/index.ts
+    command: bun run --hot /usr/src/app/server.ts
 
   ngrok:
     image: ngrok/ngrok:latest
