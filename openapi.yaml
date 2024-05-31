@@ -10,6 +10,76 @@ servers:
       subdomain:
         default: your_subdomain
 paths:
+  /machineState:
+    get:
+      summary: Get the current state of the machine with context
+      operationId: getMachineState
+      responses:
+        "200":
+          description: Machine state retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: string
+                    example: ""
+                  context:
+                    type: object
+                    properties:
+                      gptContextWindow:
+                        type: string
+                        example: "Some context window data that the gpt will use for help"
+                      filesPaths:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "/path/to/file1"
+                          - "/path/to/file2"
+
+
+  /machineSend:
+    post:
+      x-openai-isConsequential: false
+      summary: Send a command to the GPT
+      operationId: machineSend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  example: "gpt.understandsFileStructure"
+      responses:
+        '200':
+          description: Command processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: string
+                    description: The state after processing the command
+                  context:
+                    type: object
+                    description: The context associated with the state
+                  hints:
+                    type: object
+                    description: Hints for GPT
+                    properties:
+                      hint1:
+                        type: string
+                        example: "Hint 1 description"
+                      hint2:
+                        type: string
+                        example: "Hint 2 description"
+
   /file:
     get:
       summary: Fetch the contents of the file
