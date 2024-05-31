@@ -10,11 +10,11 @@ services:
       - .:/usr/src/app
     ports:
       - "3000:3000"
-    command: nodemon --watch . /usr/src/app/server.js
+    command: bun run --hot /usr/src/app/index.ts
 
   ngrok:
     image: ngrok/ngrok:latest
-    command: http  server:3000  --authtoken ${NGROK_AUTH} --subdomain ${NGROK_DOMAIN}
+    command: http server:3000 --authtoken ${NGROK_AUTH} --subdomain ${NGROK_DOMAIN}
     restart: unless-stopped
     ports:
       - "4040:4040"
