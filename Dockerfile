@@ -18,3 +18,4 @@ EXPOSE 3000
 
 # Run the application with Bun for hot reloading
 CMD ["bun", "run", "--hot", "server.ts"]
+RUN apt-get update && apt-get install -y patch
