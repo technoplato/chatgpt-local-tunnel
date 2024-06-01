@@ -89,7 +89,18 @@ const getActorPayload = (
 }
 
 app.get('/machineState', (req, res) => {
+  // Log basic request details
+  logger.info('Received /machineState request', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    query: req.query,
+    body: req.body,
+  })
+
   const payload = getActorPayload(actor)
+
+  // Log details about the fetched payload
   logger.info('Fetched machine meta', { meta: payload.hintsForGpt })
   logger.info('Fetched machine state', {
     state: payload.state,
