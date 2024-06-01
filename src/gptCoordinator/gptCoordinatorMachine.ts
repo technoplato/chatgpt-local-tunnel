@@ -111,18 +111,40 @@ command to run, iteratively listing our files.
       },
       meta: {
         hintsForGpt: `
-Hints for GPT:
+1. **Initiate Exploration**:
+   - Begin by listing all top-level folders to understand the
+     project's structure.
 
-- Attempt to run a command to list the top-level files in the user's
-  directory.
-- Make decisions iteratively based on the directory contents.
-- Establish the type of project and the general directory structure.
-- Keep responses within the size limit of approximately 50,000
-  characters or tokens.
-- Continue sending commands until the project structure is fully
-  understood.
-- Once you understand the contents of the project, send the 
-  gpt.understandsFileStructure event to the machineSend endpoint
+2. **Identify Project Type**:
+   - Look for indicative files like \`package.json\` for JavaScript
+     projects or \`cargo.toml\` for Rust projects, as examples.
+
+3. **Find Lock Files**:
+   - Check for lock files such as \`package-lock.json\`, \`yarn.lock\`,
+     or \`bun.lock\` if it's a JavaScript project.
+
+4. **Examine Key Files**:
+   - Consider reading key files like \`package.json\` or \`cargo.toml\`
+     to gather project-specific information.
+
+5. **Explore Source Directory**:
+   - Investigate the structure and contents of directories like the
+     source directory to understand the code layout.
+
+6. **Iterative Interaction**:
+   - Ask users about unfamiliar or interesting files and run
+     additional commands based on the user's response.
+   - Feel free to explore the file structure of the source directory
+     and ask the user if there are specific files they'd like to work with
+   - Use find commands to find the absolute path of those files
+
+7. **Avoid Sensitive Files**:
+   - Avoid reading environment files such as \`.env\` files.
+
+8. **Conclude Understanding**:
+   - Once confident about the project's details (e.g., "React Native
+     app using TypeScript and build tool XYZ"), suggest sending the
+     \`gpt.understandsFileStructure\` event to \`machineSend\`.
 `,
       },
     },
