@@ -13,6 +13,8 @@ interface CoordinatorMachineMeta {
   hintsForGpt: string
 }
 
+export const GptCoordinatorMachineId = 'GptCoordinatorMachineId'
+
 export const gptCoordinatorMachine = setup({
   types: {
     context: {} as CoordinatorMachineContext,
@@ -31,7 +33,7 @@ export const gptCoordinatorMachine = setup({
       actions: log(({ context, event }) => ({ context, event })),
     },
   },
-  id: 'gptCoordinatorMachineId',
+  id: GptCoordinatorMachineId,
 
   initial: 'WaitingForGptConnection',
   states: {

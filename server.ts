@@ -6,7 +6,10 @@ import {
   type AnyActor,
   createActor,
 } from 'xstate'
-import { gptCoordinatorMachine } from './src/gptCoordinator/gptCoordinatorMachine.ts'
+import {
+  gptCoordinatorMachine,
+  GptCoordinatorMachineId,
+} from './src/gptCoordinator/gptCoordinatorMachine.ts'
 import * as fs from 'fs'
 import { exec } from 'child_process'
 import winston from 'winston'
@@ -65,8 +68,11 @@ const getActorPayload = (
   const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
   const context = snapshot.context
   const meta = snapshot.getMeta()
-  logger.warn(meta)
-  const hintsForGpt = meta.hintsForGpt
+
+  const metakey = `${GptCoordinatorMachineId}.${actor.getSnapshot().value}`
+  const stateMeta = actor.getSnapshot().getMeta()[metakey]
+
+  const hintsForGpt = stateMeta?.hintsForGpt ?? ''
 
   return {
     state,
@@ -159,6 +165,4 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   logger.info('Server is running on port ' + port)
-  logger.info({ foo: 'bar' })
-  logger.info(actor.getSnapshot().getMeta())
 })
