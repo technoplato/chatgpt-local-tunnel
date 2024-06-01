@@ -1,6 +1,9 @@
 # Use the official Bun image
 FROM oven/bun:latest
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y patch
+
 # Create and change to the app directory
 WORKDIR /usr/src/app
 
@@ -18,4 +21,3 @@ EXPOSE 3000
 
 # Run the application with Bun for hot reloading
 CMD ["bun", "run", "--hot", "server.ts"]
-RUN apt-get update && apt-get install -y patch
