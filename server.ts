@@ -18,8 +18,6 @@ import { envParsedWithTypes } from './ENV/env.config.ts'
 
 dotenv.config()
 
-// logger.info(Hello, this is a log statement added right after the imports.)
-
 // Custom log format
 const customFormat = winston.format.printf(
   ({ level, message, timestamp, ...meta }) => {
@@ -236,6 +234,35 @@ app.post('/run-command', async (req, res) => {
       })
     },
   )
+})
+
+app.post('/files', async (req, res) => {
+  const { files } = req.body
+  logger.info('Received /files request', { files })
+
+  if (!files || !Array.isArray(files)) {
+    logger.error('Files are required and must be an array')
+    return res
+      .status(400)
+      .json({ error: 'Files are required and must be an array' })
+  }
+
+  files.forEach((file) => {
+    const { path, content } = file
+    if (!path || !content) {
+      logger.error('Each file must have a path and content')
+      return res
+        .status(400)
+        .json({ error: 'Each file must have a path and content' })
+    }
+
+    fs.writeFileSync(path, content, 'utf8')
+    logger.info(`File written: ${path}`)
+  })
+
+  res.json({
+    message: 'Files written successfully',
+  })
 })
 
 app.get('/', (req, res) => {
