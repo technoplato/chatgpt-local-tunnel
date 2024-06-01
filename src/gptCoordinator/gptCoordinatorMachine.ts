@@ -120,8 +120,9 @@ command to run, iteratively listing our files.
       meta: {
         hintsForGpt: `
 1. **Initiate Exploration**:
-   - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION} to understand the
-     project's structure.
+   - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
+     to understand the project's structure. Don't list the contents of the files yet. 
+     First, list the top-level filenames.
 
 2. **Identify Project Type**:
    - Look for indicative files like \`package.json\` for JavaScript
@@ -139,12 +140,10 @@ command to run, iteratively listing our files.
    - Investigate the structure and contents of directories like the
      source directory to understand the code layout.
 
-6. **Iterative Interaction**:
-   - Ask users about unfamiliar or interesting files and run
-     additional commands based on the user's response.
-   - Feel free to explore the file structure of the source directory
-     and ask the user if there are specific files they'd like to work with
-   - Use find commands to find the absolute path of those files
+6. **Automatic Iteration**:
+   - The user can stop you easily any time they like. Feel free
+     to look around at the files, being careful to avoid .env 
+     and other potentially sensitive files. 
 
 7. **Avoid Sensitive Files**:
    - Avoid reading environment files such as \`.env\` files.
