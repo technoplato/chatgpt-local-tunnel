@@ -18,6 +18,8 @@ import { envParsedWithTypes } from './ENV/env.config.ts'
 
 dotenv.config()
 
+// logger.info(Hello, this is a log statement added right after the imports.)
+
 // Custom log format
 const customFormat = winston.format.printf(
   ({ level, message, timestamp, ...meta }) => {
@@ -58,13 +60,19 @@ app.use(express.json())
 
 const port = 3000
 
-const actor = createActor(gptCoordinatorMachine, {
-  input: {
-    containerProjectLocation:
-      envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION,
-  },
-})
-actor.start()
+const getPersistentSnapshot = (userId: string) => {
+  const snapshotPath = userId
+  if (fs.existsSync(snapshotPath)) {
+    const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'))
+    return snapshot
+  }
+  return null
+}
+
+const savePersistentSnapshot = (userId: string, snapshot) => {
+  const snapshotPath = userId
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8')
+}
 
 const getActorPayload = (
   actor: ActorRefFrom<typeof gptCoordinatorMachine>,
@@ -89,6 +97,12 @@ const getActorPayload = (
 }
 
 app.get('/machineState', (req, res) => {
+  const userId = req.headers['openai-ephemeral-user-id'] as string
+  if (!userId) {
+    logger.warn('No user ID provided in request headers')
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
   // Log basic request details
   logger.info('Received /machineState request', {
     method: req.method,
@@ -97,6 +111,15 @@ app.get('/machineState', (req, res) => {
     query: req.query,
     body: req.body,
   })
+
+  const restoredState = getPersistentSnapshot(userId)
+  const actor = createActor(gptCoordinatorMachine, {
+    input: {
+      containerProjectLocation:
+        process.env.USER_PROJECT_CONTAINER_LOCATION,
+      ...(restoredState && { snapshot: restoredState }),
+    },
+  }).start()
 
   const payload = getActorPayload(actor)
 
@@ -107,16 +130,35 @@ app.get('/machineState', (req, res) => {
     context: payload.context,
   })
 
+  // Persist the snapshot after processing the request
+  const persistedState = actor.getPersistedSnapshot()
+  savePersistentSnapshot(userId, persistedState)
+
   res.send(payload)
 })
 
 app.post('/machineSend', (req, res) => {
+  const userId = req.headers['openai-ephemeral-user-id'] as string
+  if (!userId) {
+    logger.warn('No user ID provided in request headers')
+    return res.status(400).json({ error: 'User ID is required' })
+  }
+
   const command = req.body.command
   if (!command) {
     logger.warn('No command provided in /machineSend request')
     return res.status(400).json({ error: 'Command is required' })
   }
   logger.info('Received command for machineSend', { command })
+
+  const restoredState = getPersistentSnapshot(userId)
+  const actor = createActor(gptCoordinatorMachine, {
+    input: {
+      containerProjectLocation:
+        process.env.USER_PROJECT_CONTAINER_LOCATION,
+      ...(restoredState && { snapshot: restoredState }),
+    },
+  }).start()
 
   actor.send({ type: command })
   logger.info('Sent command for machineSend', { command })
@@ -125,6 +167,10 @@ app.post('/machineSend', (req, res) => {
   logger.info('Processed command for machineSend', {
     state: payload.state,
   })
+
+  // Persist the snapshot after processing the request
+  const persistedState = actor.getPersistedSnapshot()
+  savePersistentSnapshot(userId, persistedState)
 
   res.send(payload)
 })
