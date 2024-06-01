@@ -1,6 +1,8 @@
 import express from 'express'
 import {
   __unsafe_getAllOwnEventDescriptors,
+  type ActorRef,
+  type ActorRefFrom,
   type AnyActor,
   createActor,
 } from 'xstate'
@@ -11,8 +13,8 @@ import winston from 'winston'
 
 // Custom log format
 const customFormat = winston.format.printf(
-  ({ level, message, timestamp, ...meta }) => {
-    return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`
+  ({ level, message, timestamp }) => {
+    return `${timestamp} [${level}]: ${message} ${Object.keys(message).length ? JSON.stringify(message, null, 2) : ''}`
   },
 )
 
@@ -54,21 +56,35 @@ const externalProjectPath = '/usr/src/project'
 const actor = createActor(gptCoordinatorMachine)
 actor.start()
 
-app.get('/machineState', (req, res) => {
-  const state = actor.getSnapshot().value
-  const nextEvents = __unsafe_getAllOwnEventDescriptors(
-    actor.getSnapshot(),
-  )
-  const context = actor.getSnapshot().context
+// Helper function to extract payload from actor
+const getActorPayload = (
+  actor: ActorRefFrom<typeof gptCoordinatorMachine>,
+) => {
+  const snapshot = actor.getSnapshot()
+  const state = snapshot.value
+  const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
+  const context = snapshot.context
   const meta = snapshot.getMeta()
-  logger.info('Fetched machine meta', { meta })
-  logger.info('Fetched machine state', { state, context })
+  logger.warn(meta)
+  const hintsForGpt = meta.hintsForGpt
 
-  res.send({
+  return {
     state,
     context,
     nextEvents,
+    hintsForGpt,
+  }
+}
+
+app.get('/machineState', (req, res) => {
+  const payload = getActorPayload(actor)
+  logger.info('Fetched machine meta', { meta: payload.hintsForGpt })
+  logger.info('Fetched machine state', {
+    state: payload.state,
+    context: payload.context,
   })
+
+  res.send(payload)
 })
 
 app.post('/machineSend', (req, res) => {
@@ -80,28 +96,15 @@ app.post('/machineSend', (req, res) => {
   logger.info('Received command for machineSend', { command })
 
   actor.send({ type: command })
-  const snapshot = actor.getSnapshot()
 
+  logger.info(payload)
+  const payload = getActorPayload(actor)
   logger.info('Processed command for machineSend', {
-    state: snapshot.value,
+    state: payload.state,
   })
+  logger.info('Fetched machine meta', { meta: payload.hintsForGpt })
 
-  const state = actor.getSnapshot().value
-  const nextEvents = __unsafe_getAllOwnEventDescriptors(
-    actor.getSnapshot(),
-  )
-  const context = actor.getSnapshot().context
-  const meta = snapshot.getMeta()
-
-  logger.info('Fetched machine meta', { meta })
-  const hintsForGpt = meta.hintsForGpt
-
-  res.send({
-    state,
-    context,
-    hints: hintsForGpt,
-    nextEvents,
-  })
+  res.send(payload)
 })
 
 app.post('/run-command', async (req, res) => {
@@ -156,4 +159,6 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   logger.info('Server is running on port ' + port)
+  logger.info({ foo: 'bar' })
+  logger.info(actor.getSnapshot().getMeta())
 })
