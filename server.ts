@@ -13,6 +13,10 @@ import {
 import * as fs from 'fs'
 import { exec } from 'child_process'
 import winston from 'winston'
+import dotenv from 'dotenv'
+import { envParsedWithTypes } from './ENV/env.config.ts'
+
+dotenv.config()
 
 // Custom log format
 const customFormat = winston.format.printf(
@@ -54,9 +58,12 @@ app.use(express.json())
 
 const port = 3000
 
-const externalProjectPath = '/usr/src/project'
-
-const actor = createActor(gptCoordinatorMachine)
+const actor = createActor(gptCoordinatorMachine, {
+  input: {
+    containerProjectLocation:
+      envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION,
+  },
+})
 actor.start()
 
 const getActorPayload = (
@@ -125,9 +132,11 @@ app.post('/run-command', async (req, res) => {
       .json({ error: 'Command and commit message are required' })
   }
 
-  if (!fs.existsSync(externalProjectPath)) {
+  if (
+    !fs.existsSync(envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION)
+  ) {
     logger.error('External project path does not exist', {
-      path: externalProjectPath,
+      path: envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION,
     })
     return res
       .status(400)
@@ -136,7 +145,7 @@ app.post('/run-command', async (req, res) => {
 
   exec(
     command,
-    { cwd: externalProjectPath },
+    { cwd: envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION },
     (err, stdout, stderr) => {
       if (err) {
         logger.error('Command execution error', { stderr })

@@ -1,8 +1,10 @@
 import { assign, log, setup } from 'xstate'
+import { envParsedWithTypes } from '../../ENV/env.config.ts'
 
 interface CoordinatorMachineContext {
   gptContextWindow: string
   filesPaths: string[]
+  containerProjectLocation: string
 }
 
 interface CoordinatorMachineEvents {
@@ -13,6 +15,10 @@ interface CoordinatorMachineMeta {
   hintsForGpt: string
 }
 
+interface CoordinatorMachineInput {
+  containerProjectLocation: string
+}
+
 export const GptCoordinatorMachineId = 'GptCoordinatorMachineId'
 
 export const gptCoordinatorMachine = setup({
@@ -20,14 +26,16 @@ export const gptCoordinatorMachine = setup({
     context: {} as CoordinatorMachineContext,
     events: {} as CoordinatorMachineEvents,
     meta: {} as CoordinatorMachineMeta,
+    input: {} as CoordinatorMachineInput,
   },
   actions: {},
 }).createMachine({
-  context: {
+  context: ({ input }) => ({
+    containerProjectLocation: input.containerProjectLocation,
     gptContextWindow:
       'some extra stuff for the gpt the hint is the weather is purple',
     filesPaths: [],
-  },
+  }),
   on: {
     '*': {
       actions: log(({ context, event }) => ({ context, event })),
@@ -112,7 +120,7 @@ command to run, iteratively listing our files.
       meta: {
         hintsForGpt: `
 1. **Initiate Exploration**:
-   - Begin by listing all top-level folders to understand the
+   - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION} to understand the
      project's structure.
 
 2. **Identify Project Type**:
