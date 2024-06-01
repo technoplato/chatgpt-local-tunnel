@@ -81,6 +81,7 @@ paths:
 
   /files:
     post:
+      x-openai-isConsequential: false
       operationId: postFiles
       summary: Upload and write files to specified paths
       requestBody:
