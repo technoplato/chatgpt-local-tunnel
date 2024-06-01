@@ -55,6 +55,7 @@ if (process.env.NODE_ENV !== 'production') {
   )
 }
 
+logger.info('Server started and logger initialized.')
 const app = express()
 app.use(express.json())
 
@@ -117,9 +118,15 @@ app.get('/machineState', (req, res) => {
     input: {
       containerProjectLocation:
         process.env.USER_PROJECT_CONTAINER_LOCATION,
-      ...(restoredState && { snapshot: restoredState }),
     },
+    ...(restoredState && { snapshot: restoredState }),
   }).start()
+  logger.info(
+    `Machine state before sending command: ${JSON.stringify(actor.getSnapshot())}`,
+  )
+  logger.info(
+    `Machine state after /machineState: ${JSON.stringify(actor.getSnapshot())}`,
+  )
 
   const payload = getActorPayload(actor)
 
@@ -156,11 +163,20 @@ app.post('/machineSend', (req, res) => {
     input: {
       containerProjectLocation:
         process.env.USER_PROJECT_CONTAINER_LOCATION,
-      ...(restoredState && { snapshot: restoredState }),
     },
+    ...(restoredState && { snapshot: restoredState }),
   }).start()
+  logger.info(
+    `Machine state before sending command: ${JSON.stringify(actor.getSnapshot())}`,
+  )
+  logger.info(
+    `Machine state after /machineState: ${JSON.stringify(actor.getSnapshot())}`,
+  )
 
   actor.send({ type: command })
+  logger.info(
+    `Machine state after sending command: ${JSON.stringify(actor.getSnapshot())}`,
+  )
   logger.info('Sent command for machineSend', { command })
 
   const payload = getActorPayload(actor)
