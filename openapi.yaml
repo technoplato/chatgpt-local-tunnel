@@ -39,7 +39,6 @@ paths:
                           - "/path/to/file1"
                           - "/path/to/file2"
 
-
   /machineSend:
     post:
       x-openai-isConsequential: false
@@ -79,6 +78,59 @@ paths:
                       hint2:
                         type: string
                         example: "Hint 2 description"
+
+  /files:
+    post:
+      operationId: postFiles
+      summary: Upload and write files to specified paths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                        description: Absolute path where the file will be written
+                      content:
+                        type: string
+                        description: Content to be written to the file
+      responses:
+        '200':
+          description: Files written successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Files written successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Files are required and must be an array
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
   /file:
     get:
