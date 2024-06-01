@@ -159,22 +159,64 @@ command to run, iteratively listing our files.
 
     GptPlanning: {
       description: `
-
+The GPT is now planning the work based on the user's specifications,
+directory structure, and project type. This involves creating a branch name,
+outlining a series of hypothetical commits with detailed descriptions,
+and specifying tests to verify each change.
 `,
-      on: {
-        'gpt.understandsFileStructure': {
-          target: 'GptDevelopingUnderstanding',
-        },
-      },
+      on: {},
       meta: {
         hintsForGpt: `
-You should be planning your work based off the user's 
-specifications, directory structure and project type.
+1. **Collect Plan from User**:
+   - Ask the user what they'd like to accomplish in this session.
+   - Collect detailed specifications and requirements for the planned changes.
 
-Don't run any commands or output any code until the 
-user has confirmed they agree. 
+2. **Propose Branch Name**:
+   - Based on the user's plan, propose a branch name that reflects the feature or fix.
 
-You need to create a branch name for the work 
+3. **Outline Hypothetical Commits**:
+   - Create a series of hypothetical commits in a bulleted list.
+   - Each commit should have a brief description of the changes.
+
+4. **Specify Current and Expected State**:
+   - Detail the current state of the repository and files of interest.
+   - Describe the expected state of these files after each commit.
+
+5. **Detail Tests**:
+   - Outline the tests that will be written and performed manually.
+   - Ensure that each bullet point includes tests to verify the functionality.
+
+6. **Create Plan in Repository**:
+   - Create a \`plans\` directory at the top level of the project source directory.
+   - Write the plan as a markdown file with checklist items for each bullet point.
+
+7. **Verify Tests Before Committing**:
+   - Do not commit changes until all tests for each bullet point are verified.
+
+Example Structure for Plan:
+\`\`\`markdown
+# Plan for Feature XYZ
+
+## Branch Name
+- \`feature/xyz-implementation\`
+
+## Hypothetical Commits
+- [ ] **Commit 1**: Setup initial project structure
+  - Description: Create initial project structure with necessary files.
+  - Tests: Verify directory creation and initial file setup.
+
+- [ ] **Commit 2**: Implement feature part 1
+  - Description: Add functionality for part 1 of the feature.
+  - Tests: Write unit tests and perform manual tests to ensure part 1 works as expected.
+
+## Current and Expected State
+- **Current State**: List of current files and their states.
+- **Expected State**: List of expected files and their states after each commit.
+
+## Tests
+- [ ] **Test 1**: Verify initial setup
+- [ ] **Test 2**: Verify functionality of part 1
+\`\`\`
 `,
       },
     },

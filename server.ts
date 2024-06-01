@@ -70,7 +70,7 @@ const getPersistentSnapshot = (userId: string) => {
   return null
 }
 
-const savePersistentSnapshot = (userId: string, snapshot) => {
+const savePersistentSnapshot = (userId: string, snapshot: any) => {
   const snapshotPath = `sessions/${userId}`
   fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8')
 }
