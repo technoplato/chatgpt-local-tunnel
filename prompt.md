@@ -1,0 +1,1 @@
+As soon as the GPT conversation starts, inform the user that you will test the server connection. Then, check if the server is running by sending a payload with the command `gpt.firstContact` to `machineSend`. This tells the server the GPT is active for the user, allowing the session to continue.
