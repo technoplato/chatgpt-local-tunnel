@@ -16,8 +16,8 @@ import winston from 'winston'
 
 // Custom log format
 const customFormat = winston.format.printf(
-  ({ level, message, timestamp }) => {
-    return `${timestamp} [${level}]: ${message} ${Object.keys(message).length ? JSON.stringify(message, null, 2) : ''}`
+  ({ level, message, timestamp, ...meta }) => {
+    return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`
   },
 )
 
@@ -59,7 +59,6 @@ const externalProjectPath = '/usr/src/project'
 const actor = createActor(gptCoordinatorMachine)
 actor.start()
 
-// Helper function to extract payload from actor
 const getActorPayload = (
   actor: ActorRefFrom<typeof gptCoordinatorMachine>,
 ) => {
@@ -67,10 +66,10 @@ const getActorPayload = (
   const state = snapshot.value
   const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
   const context = snapshot.context
-  const meta = snapshot.getMeta()
+  const metaMap = snapshot.getMeta()
 
   const metakey = `${GptCoordinatorMachineId}.${actor.getSnapshot().value}`
-  const stateMeta = actor.getSnapshot().getMeta()[metakey]
+  const stateMeta = metaMap[metakey]
 
   const hintsForGpt = stateMeta?.hintsForGpt ?? ''
 
@@ -102,13 +101,12 @@ app.post('/machineSend', (req, res) => {
   logger.info('Received command for machineSend', { command })
 
   actor.send({ type: command })
+  logger.info('Sent command for machineSend', { command })
 
-  logger.info(payload)
   const payload = getActorPayload(actor)
   logger.info('Processed command for machineSend', {
     state: payload.state,
   })
-  logger.info('Fetched machine meta', { meta: payload.hintsForGpt })
 
   res.send(payload)
 })
