@@ -61,7 +61,7 @@ app.use(express.json())
 const port = 3000
 
 const getPersistentSnapshot = (userId: string) => {
-  const snapshotPath = userId
+  const snapshotPath = `sessions/${userId}`
   if (fs.existsSync(snapshotPath)) {
     const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'))
     return snapshot
@@ -70,7 +70,7 @@ const getPersistentSnapshot = (userId: string) => {
 }
 
 const savePersistentSnapshot = (userId: string, snapshot) => {
-  const snapshotPath = userId
+  const snapshotPath = `sessions/${userId}`
   fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8')
 }
 
