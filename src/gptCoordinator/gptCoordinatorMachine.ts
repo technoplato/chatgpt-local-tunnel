@@ -136,6 +136,13 @@ Hints for GPT:
       },
       meta: {
         hintsForGpt: `
+You should be planning your work based off the user's 
+specifications, directory structure and project type.
+
+Don't run any commands or output any code until the 
+user has confirmed they agree. 
+
+You need to create a branch name for the work 
 `,
       },
     },
