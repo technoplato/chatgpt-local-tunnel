@@ -12,7 +12,7 @@ import winston from 'winston'
 // Custom log format
 const customFormat = winston.format.printf(
   ({ level, message, timestamp, ...meta }) => {
-    return
+    return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`
   },
 )
 
@@ -21,7 +21,7 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    // customFormat
+    customFormat,
   ),
   transports: [
     new winston.transports.File({
@@ -38,7 +38,7 @@ if (process.env.NODE_ENV !== 'production') {
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.timestamp(),
-        // customFormat
+        customFormat,
       ),
     }),
   )
@@ -60,7 +60,8 @@ app.get('/machineState', (req, res) => {
     actor.getSnapshot(),
   )
   const context = actor.getSnapshot().context
-
+  const meta = snapshot.getMeta()
+  logger.info('Fetched machine meta', { meta })
   logger.info('Fetched machine state', { state, context })
 
   res.send({
@@ -76,21 +77,28 @@ app.post('/machineSend', (req, res) => {
     logger.warn('No command provided in /machineSend request')
     return res.status(400).json({ error: 'Command is required' })
   }
-
   logger.info('Received command for machineSend', { command })
+
   actor.send({ type: command })
   const snapshot = actor.getSnapshot()
-  const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
 
-  const meta = snapshot.getMeta()
-  const hintsForGpt = meta.hintsForGpt
   logger.info('Processed command for machineSend', {
     state: snapshot.value,
   })
 
+  const state = actor.getSnapshot().value
+  const nextEvents = __unsafe_getAllOwnEventDescriptors(
+    actor.getSnapshot(),
+  )
+  const context = actor.getSnapshot().context
+  const meta = snapshot.getMeta()
+
+  logger.info('Fetched machine meta', { meta })
+  const hintsForGpt = meta.hintsForGpt
+
   res.send({
-    state: snapshot.value,
-    context: snapshot.context,
+    state,
+    context,
     hints: hintsForGpt,
     nextEvents,
   })
@@ -103,7 +111,7 @@ app.post('/run-command', async (req, res) => {
     commitMessage,
   })
 
-  if (!command || !commitMessage) {
+  if (!command) {
     logger.error('Command and commit message are required')
     return res
       .status(400)
@@ -147,5 +155,5 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-  logger.info()
+  logger.info('Server is running on port ' + port)
 })
