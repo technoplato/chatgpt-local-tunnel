@@ -20,9 +20,7 @@ COPY . .
 ARG GIT_USER_NAME
 ARG GIT_USER_EMAIL
 
-RUN echo "GIT_USER_NAME is: $GIT_USER_NAME"; \
-    echo "GIT_USER_EMAIL is: $GIT_USER_EMAIL"; \
-    if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
+RUN if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
       echo "Setting Git user name and email"; \
       git config --global user.name "$GIT_USER_NAME"; \
       git config --global user.email "$GIT_USER_EMAIL"; \
@@ -35,3 +33,4 @@ EXPOSE 3000
 
 # Run the application with Bun for hot reloading
 CMD ["bun", "run", "--hot", "server.ts"]
+
