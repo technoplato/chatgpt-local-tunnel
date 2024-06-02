@@ -119,6 +119,11 @@ command to run, iteratively listing our files.
       },
       meta: {
         hintsForGpt: `
+0. **Automatic Iteration**:
+   - The user can stop you easily any time they like. Feel free
+     to look around at the files, being careful to avoid .env 
+     and other potentially sensitive files. 
+
 1. **Initiate Exploration**:
    - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
      to understand the project's structure. Don't list the contents of the files yet. 
@@ -140,11 +145,6 @@ command to run, iteratively listing our files.
    - Investigate the structure and contents of directories like the
      source directory to understand the code layout.
 
-6. **Automatic Iteration**:
-   - The user can stop you easily any time they like. Feel free
-     to look around at the files, being careful to avoid .env 
-     and other potentially sensitive files. 
-
 7. **Avoid Sensitive Files**:
    - Avoid reading environment files such as \`.env\` files.
 
@@ -152,6 +152,10 @@ command to run, iteratively listing our files.
    - Once confident about the project's details (e.g., "React Native
      app using TypeScript and build tool XYZ"), suggest sending the
      \`gpt.understandsFileStructure\` event to \`machineSend\`.
+     
+9. **Start Exploration**:
+   - Proceed automatically. Do not ask the user. Read at least 4 relevant files before
+   you ask the user for feedback. Offer 3 options in a numbered list.
 `,
       },
     },
