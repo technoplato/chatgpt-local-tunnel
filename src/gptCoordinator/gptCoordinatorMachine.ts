@@ -9,7 +9,8 @@ interface CoordinatorMachineContext {
   gptContextWindow: string
   filesPaths: string[]
   containerProjectLocation: string
-  projectInformation: string
+  projectBuildInformation: string
+  projectSourceInformation: string
 }
 
 type CoordinatorMachineEvents =
@@ -19,7 +20,11 @@ type CoordinatorMachineEvents =
     }
   | {
       type: 'gpt.understandsProjectStructure'
-      projectInformation: string
+      projectBuildInformation: string
+    }
+  | {
+      type: 'gpt.completedProjectSourceUnderstanding'
+      projectSourceInformation: string
     }
 
 interface CoordinatorMachineMeta {
@@ -46,7 +51,8 @@ export const gptCoordinatorMachine = setup({
     gptContextWindow:
       'some extra stuff for the gpt the hint is the weather is purple',
     filesPaths: [],
-    projectInformation: '',
+    projectBuildInformation: '',
+    projectSourceInformation: '',
   }),
   on: {
     '*': {
@@ -82,23 +88,11 @@ the GPT is not yet established communication with the server.
     },
 
     GptDevelopingUnderstanding: {
-      description: developingUnderstandingDescription,
-      on: {
-        'gpt.completedInitialProjectUnderstanding': {
-          target: 'GptPlanning',
-        },
-        'gpt.understandsProjectStructure': {
-          actions: [
-            assign({
-              projectInformation: ({ event }) =>
-                event.projectInformation,
-            }),
-          ],
-        },
-      },
-
-      meta: {
-        hintsForGpt: `
+      initial: 'UnderstandingProjectStructure',
+      states: {
+        UnderstandingProjectStructure: {
+          meta: {
+            hintsForGpt: `
 0. **Automatic Iteration**:
    - The user can stop you easily any time they like. Feel free
      to look around at the files, being careful to avoid .env 
@@ -121,14 +115,7 @@ the GPT is not yet established communication with the server.
    - Consider reading key files like \`package.json\` or \`cargo.toml\`
      to gather project-specific information.
 
-5. **Explore Source Directory**:
-   - Investigate the structure and contents of directories like the
-     source directory to understand the code layout.
-
-7. **Avoid Sensitive Files**:
-   - Avoid reading environment files such as \`.env\` files.
-
-8. **Conclude Understanding**:
+6. **Conclude Understanding**:
    - Once confident about the project's details (e.g., "React Native
      app using TypeScript and build tool XYZ"), suggest sending the
      \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\`.
@@ -137,7 +124,64 @@ the GPT is not yet established communication with the server.
    - Proceed automatically. Do not ask the user. Read at least 4 relevant files before
    you ask the user for feedback. Offer 3 options in a numbered list.
 `,
+          },
+          on: {
+            'gpt.understandsProjectStructure': {
+              actions: [
+                assign({
+                  projectBuildInformation: ({ event }) =>
+                    event.projectBuildInformation,
+                }),
+              ],
+              target: 'UnderstandingProjectSource',
+            },
+          },
+        },
+        UnderstandingProjectSource: {
+          meta: {
+            hintsForGpt: `
+0. **Automatic Iteration**:
+   - The user can stop you easily any time they like. Feel free
+     to look around at the files, being careful to avoid .env
+     and other potentially sensitive files.
+
+1. **Initiate Exploration**:
+   - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
+     to understand the project's structure. Don't list the contents of the files yet.
+     First, list the top-level filenames.
+
+5. **Explore Source Directory**:
+   - Investigate the structure and contents of directories like the
+     source directory to understand the code layout. Iterate listing out files, being careful to avoid folders such as
+      node_modules and other deeply nested and large directories.
+
+7. **Avoid Sensitive Files**:
+   - Avoid reading environment files such as \`.env\` files.
+
+8. **Conclude Understanding**:
+   - Once confident about the project's details (e.g., "React Native app using TypeScript and build tool XYZ"), suggest
+    sending the \`gpt.completedProjectSourceUnderstanding\` event to \`machineSend\` with a general idea about how the 
+    project is structured.
+
+9. **Start Exploration**:
+   - Proceed automatically. Do not ask the user. Read at least 4 relevant files before you ask the user for feedback.
+    Offer 3 options in a numbered list. ask the user for feedback. Offer 3 options in a numbered list.
+`,
+          },
+          on: {
+            'gpt.understandsProjectStructure': {
+              actions: [
+                assign({
+                  projectBuildInformation: ({ event }) =>
+                    event.projectBuildInformation,
+                }),
+              ],
+              target: '#GptCoordinatorMachineId.GptPlanning',
+            },
+          },
+        },
       },
+      description: developingUnderstandingDescription,
     },
 
     GptPlanning: {

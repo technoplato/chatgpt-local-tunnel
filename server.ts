@@ -83,7 +83,19 @@ const getActorPayload = (
   const context = snapshot.context
   const metaMap = snapshot.getMeta()
 
-  const metakey = `${GptCoordinatorMachineId}.${actor.getSnapshot().value}`
+  const stateValueString = snapshot._nodes
+    .filter((s) => s.type === 'atomic' || s.type === 'final')
+    .map((s) => s.id)
+    .join(', ')
+    .split('.')
+    .slice(1)
+    .join('.')
+
+  logger.info('stateValueString', { stateValueString })
+
+  const metakey = `${GptCoordinatorMachineId}.${stateValueString}`
+  logger.info('metakey', { metakey })
+  logger.info('meta', { meta: metaMap[metakey] })
   const stateMeta = metaMap[metakey]
 
   const hintsForGpt = stateMeta?.hintsForGpt ?? ''
@@ -182,6 +194,9 @@ app.post('/machineSend', (req, res) => {
   logger.info('Processed command for machineSend', {
     state: payload.state,
   })
+
+  // Log details about the fetched payload
+  logger.info('Fetched machine meta', { meta: payload.hintsForGpt })
 
   // Persist the snapshot after processing the request
   const persistedState = actor.getPersistedSnapshot()
