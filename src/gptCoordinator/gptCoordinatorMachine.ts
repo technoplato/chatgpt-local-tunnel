@@ -5,11 +5,18 @@ interface CoordinatorMachineContext {
   gptContextWindow: string
   filesPaths: string[]
   containerProjectLocation: string
+  projectInformation: string
 }
 
-interface CoordinatorMachineEvents {
-  type: 'gpt.firstContact' | 'gpt.understandsFileStructure'
-}
+type CoordinatorMachineEvents =
+  | { type: 'gpt.firstContact' }
+  | {
+      type: 'gpt.completedInitialProjectUnderstanding'
+    }
+  | {
+      type: 'gpt.understandsProjectStructure'
+      projectInformation: string
+    }
 
 interface CoordinatorMachineMeta {
   hintsForGpt: string
@@ -35,6 +42,7 @@ export const gptCoordinatorMachine = setup({
     gptContextWindow:
       'some extra stuff for the gpt the hint is the weather is purple',
     filesPaths: [],
+    projectInformation: '',
   }),
   on: {
     '*': {
@@ -113,10 +121,19 @@ We expect the GPT to send one list command, then decide the next
 command to run, iteratively listing our files.
 `,
       on: {
-        'gpt.understandsFileStructure': {
+        'gpt.completedInitialProjectUnderstanding': {
           target: 'GptPlanning',
         },
+        'gpt.understandsProjectStructure': {
+          actions: [
+            assign({
+              projectInformation: ({ event }) =>
+                event.projectInformation,
+            }),
+          ],
+        },
       },
+
       meta: {
         hintsForGpt: `
 0. **Automatic Iteration**:
@@ -151,7 +168,7 @@ command to run, iteratively listing our files.
 8. **Conclude Understanding**:
    - Once confident about the project's details (e.g., "React Native
      app using TypeScript and build tool XYZ"), suggest sending the
-     \`gpt.understandsFileStructure\` event to \`machineSend\`.
+     \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\`.
      
 9. **Start Exploration**:
    - Proceed automatically. Do not ask the user. Read at least 4 relevant files before
