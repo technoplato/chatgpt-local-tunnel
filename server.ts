@@ -15,6 +15,7 @@ import { exec } from 'child_process'
 import winston from 'winston'
 import dotenv from 'dotenv'
 import { envParsedWithTypes } from './ENV/env.config.ts'
+import axios from 'axios'
 
 dotenv.config()
 
@@ -34,10 +35,10 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.File({
-      filename: 'error.log',
+      filename: 'logs/error.log',
       level: 'error',
     }),
-    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
   ],
 })
 
@@ -236,33 +237,121 @@ app.post('/run-command', async (req, res) => {
   )
 })
 
-app.post('/files', async (req, res) => {
-  const { files } = req.body
-  logger.info('Received /files request', { files })
+// app.post('/files', async (req, res) => {
+//   const { files } = req.body
+//   logger.info('Received /files request', { files })
+//
+//   if (!files || !Array.isArray(files)) {
+//     logger.error('Files are required and must be an array')
+//     return res
+//       .status(400)
+//       .json({ error: 'Files are required and must be an array' })
+//   }
+//
+//   files.forEach((file) => {
+//     const { path, content } = file
+//     if (!path || !content) {
+//       logger.error('Each file must have a path and content')
+//       return res
+//         .status(400)
+//         .json({ error: 'Each file must have a path and content' })
+//     }
+//
+//     fs.writeFileSync(path, content, 'utf8')
+//     logger.info(`File written: ${path}`)
+//   })
+//
+//   res.json({
+//     message: 'Files written successfully',
+//   })
+// })
 
-  if (!files || !Array.isArray(files)) {
-    logger.error('Files are required and must be an array')
-    return res
-      .status(400)
-      .json({ error: 'Files are required and must be an array' })
+app.post('/files', async (req, res) => {
+  const openaiFileIdRefs = req.body.openaiFileIdRefs
+
+  logger.info('Received /files request', { openaiFileIdRefs })
+
+  if (!openaiFileIdRefs || !Array.isArray(openaiFileIdRefs)) {
+    logger.error('openaiFileIdRefs are required and must be an array')
+    return res.status(400).json({
+      error: 'openaiFileIdRefs are required and must be an array',
+    })
   }
 
-  files.forEach((file) => {
-    const { path, content } = file
-    if (!path || !content) {
-      logger.error('Each file must have a path and content')
-      return res
-        .status(400)
-        .json({ error: 'Each file must have a path and content' })
+  if (openaiFileIdRefs.length === 0) {
+    logger.error('openaiFileIdRefs array is empty')
+    return res.status(400).json({
+      error: 'openaiFileIdRefs array is empty',
+    })
+  }
+
+  try {
+    for (const file of openaiFileIdRefs) {
+      const { name, id, mime_type, download_link } = file
+
+      // Download the file content from the URL if download_link is provided
+      if (download_link) {
+        const response = await axios.get(download_link, {
+          responseType: 'arraybuffer',
+        })
+        fs.writeFileSync(name, response.data)
+        logger.info(`File downloaded and written: ${name}`)
+      } else {
+        // Write the content directly to the specified name
+        fs.writeFileSync(name, file.content)
+        logger.info(`File written: ${name}`)
+      }
     }
+    res.json({ message: 'Files written successfully' })
+    logger.info('Files written successfully')
+  } catch (error) {
+    logger.error('Error writing files', { error })
+    res.status(500).json({ error })
+  }
+})
 
-    fs.writeFileSync(path, content, 'utf8')
-    logger.info(`File written: ${path}`)
-  })
+app.post('/createWidget', async (req, res) => {
+  const openaiFileIdRefs = req.body.openaiFileIdRefs
 
-  res.json({
-    message: 'Files written successfully',
-  })
+  logger.info('Received /createWidget request', { openaiFileIdRefs })
+
+  if (!openaiFileIdRefs || !Array.isArray(openaiFileIdRefs)) {
+    logger.error('openaiFileIdRefs are required and must be an array')
+    return res.status(400).json({
+      error: 'openaiFileIdRefs are required and must be an array',
+    })
+  }
+
+  if (openaiFileIdRefs.length === 0) {
+    logger.error('openaiFileIdRefs array is empty')
+    return res.status(400).json({
+      error: 'openaiFileIdRefs array is empty',
+    })
+  }
+
+  // try {
+  //   for (const file of openaiFileIdRefs) {
+  //     const { path, name, id, mime_type, download_link } = file
+  //
+  //     // Download the file content from the URL if download_link is provided
+  //     if (download_link) {
+  //       const response = await axios.get(download_link, {
+  //         responseType: 'arraybuffer',
+  //       })
+  //       fs.writeFileSync(path, response.data)
+  //       logger.info(`File downloaded and written: ${path}`)
+  //     } else {
+  //       // Write the content directly to the specified path
+  //       fs.writeFileSync(path, file.content)
+  //       logger.info(`File written: ${path}`)
+  //     }
+  //   }
+  //   res.json({ message: 'Files written successfully' })
+  //   logger.info('Files written successfully')
+  // } catch (error) {
+  //   logger.error('Error writing files', { error })
+  //   res.status(500).json({ error })
+  // }
 })
 
 app.get('/', (req, res) => {
