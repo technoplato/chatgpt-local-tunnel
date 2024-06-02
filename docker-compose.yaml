@@ -2,7 +2,11 @@ version: '3.8'
 
 services:
   server:
-    build: .
+    build:
+      context: .
+      args:
+        - GIT_USER_NAME=${GIT_USER_NAME}
+        - GIT_USER_EMAIL=${GIT_USER_EMAIL}
     environment:
       - PROJECT_PATH=${PROJECT_PATH}
     volumes:
@@ -11,6 +15,7 @@ services:
     ports:
       - "3000:3000"
     command: bun run --hot /usr/src/app/server.ts
+
 
   ngrok:
     image: ngrok/ngrok:latest

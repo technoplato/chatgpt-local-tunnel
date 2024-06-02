@@ -16,8 +16,19 @@ RUN bun install
 # Copy the rest of the application code, including hidden files
 COPY . .
 
-# Copy the .gitconfig explicitly
-#COPY .gitconfig /root/.gitconfig
+# Set Git user name and email if provided
+ARG GIT_USER_NAME
+ARG GIT_USER_EMAIL
+
+RUN echo "GIT_USER_NAME is: $GIT_USER_NAME"; \
+    echo "GIT_USER_EMAIL is: $GIT_USER_EMAIL"; \
+    if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
+      echo "Setting Git user name and email"; \
+      git config --global user.name "$GIT_USER_NAME"; \
+      git config --global user.email "$GIT_USER_EMAIL"; \
+    else \
+      echo "Git user name or email not provided"; \
+    fi
 
 # Expose the port the app runs on
 EXPOSE 3000
