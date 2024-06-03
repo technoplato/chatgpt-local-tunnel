@@ -80,10 +80,22 @@ app.post('/encodedPatchFile', (req, res) => {
     `patch ${filePath} ${tempPatchFilePath}`,
     (error, stdout, stderr) => {
       if (error) {
-        logger.error(`Error applying patch: ${stderr}`)
-        return res
-          .status(500)
-          .json({ error: 'Failed to apply patch' })
+        const fileContents = fs.readFileSync(filePath, 'utf-8')
+        const patchContents = fs.readFileSync(
+          tempPatchFilePath,
+          'utf-8',
+        )
+
+        logger.error(`Error applying patch: ${stderr}`, {
+          fileContents,
+          patchContents,
+        })
+        return res.status(500).json({
+          error: 'Failed to apply patch',
+          stderr,
+          fileContents,
+          patchContents,
+        })
       }
 
       // Clean up the temporary patch file
@@ -98,7 +110,6 @@ app.post('/encodedPatchFile', (req, res) => {
     },
   )
 })
-
 const port = 3000
 
 const getPersistentSnapshot = (userId: string) => {
@@ -123,6 +134,7 @@ const getActorPayload = (
   const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
   const context = snapshot.context
   const metaMap = snapshot.getMeta()
+
   const stateValueString = snapshot._nodes
     .filter((s) => s.type === 'atomic' || s.type === 'final')
     .map((s) => s.id)
@@ -134,17 +146,18 @@ const getActorPayload = (
   logger.info('stateValueString', { stateValueString })
 
   const metakey = `${GptCoordinatorMachineId}.${stateValueString}`
-  logger.info('metakey', { metakey })
-  logger.info('meta', { meta: metaMap[metakey] })
-  const stateMeta = metaMap[metakey]
 
-  const hintsForGpt = stateMeta?.hintsForGpt ?? ''
+  const stateMeta = metaMap[metakey]
+  const topLevelMeta = metaMap[GptCoordinatorMachineId]
+
+  const combinedHintsForGpt =
+    topLevelMeta?.hintsForGpt ?? '' + stateMeta?.hintsForGpt ?? ''
 
   return {
     state,
     context,
     nextEvents,
-    hintsForGpt,
+    hintsForGpt: combinedHintsForGpt,
   }
 }
 
