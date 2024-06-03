@@ -147,11 +147,23 @@ const getActorPayload = (
 
   const metakey = `${GptCoordinatorMachineId}.${stateValueString}`
 
-  const stateMeta = metaMap[metakey]
-  const topLevelMeta = metaMap[GptCoordinatorMachineId]
+  const stateMeta = metaMap[metakey]?.hintsForGpt ?? ''
+  const topLevelMeta =
+    metaMap[GptCoordinatorMachineId]?.hintsForGpt ?? ''
 
+  const header = `
+ \n---------------------------------------------------------\n
+ Hints for this entire process:
+ \n---------------------------------------------------------\n
+ `
+
+  const divider = `
+ \n---------------------------------------------------------\n
+ Hints specific to this state: ${stateValueString}
+ \n---------------------------------------------------------\n
+ `
   const combinedHintsForGpt =
-    topLevelMeta?.hintsForGpt ?? '' + stateMeta?.hintsForGpt ?? ''
+    header + topLevelMeta + divider + stateMeta
 
   return {
     state,
