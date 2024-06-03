@@ -97,12 +97,11 @@ paths:
                   items:
                     type: string
 
-  /files:
+  /encodedPatchFile:
     post:
       x-openai-isConsequential: false
-      operationId: postFiles
-      summary: Upload and write files to specified paths
-      description: Uploads files to the server running locally on the user's machine to help make changes in the user's local project.
+      summary: Upload an encoded file patch which will be applied to the specified path
+      operationId: encodedPatchFile
       requestBody:
         required: true
         content:
@@ -110,13 +109,16 @@ paths:
             schema:
               type: object
               properties:
-                openaiFileIdRefs:
-                  type: array
-                  items:
-                    type: string
+                encodedPatchFile:
+                  type: string
+                  example: "base64_encoded_content_here"
+                filePath:
+                  type: string
+                  description: The path to the file to be patched
+                  example: "/full/path/to/file.txt"
       responses:
         '200':
-          description: Files written successfully
+          description: File patched successfully
           content:
             application/json:
               schema:
@@ -124,7 +126,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Files written successfully
+                    example: File patched successfully to /full/path/to/file.txt
         '400':
           description: Bad request
           content:
@@ -134,7 +136,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Files are required and must be an array
+                    example: encodedPatchFile and filePath are required
         '500':
           description: Server error
           content:
@@ -144,6 +146,55 @@ paths:
                 properties:
                   error:
                     type: string
+                    example: Error patching file
+
+#  /files:
+#    post:
+#      x-openai-isConsequential: false
+#      operationId: postFiles
+#      summary: Upload and write files to specified paths
+#      description: Uploads files to the server running locally on the user's machine to help make changes in the user's local project.
+#      requestBody:
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              type: object
+#              properties:
+#                openaiFileIdRefs:
+#                  type: array
+#                  items:
+#                    type: string
+#      responses:
+#        '200':
+#          description: Files written successfully
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  message:
+#                    type: string
+#                    example: Files written successfully
+#        '400':
+#          description: Bad request
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  error:
+#                    type: string
+#                    example: Files are required and must be an array
+#        '500':
+#          description: Server error
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  error:
+#                    type: string
 
   /run-command:
     post:

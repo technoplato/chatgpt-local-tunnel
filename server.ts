@@ -58,6 +58,47 @@ logger.info('Server started and logger initialized.')
 const app = express()
 app.use(express.json())
 
+app.post('/encodedPatchFile', (req, res) => {
+  const { encodedPatchFile, filePath } = req.body
+
+  if (!encodedPatchFile || !filePath) {
+    logger.error('encodedPatchFile and filePath are required')
+    return res
+      .status(400)
+      .json({ error: 'encodedPatchFile and filePath are required' })
+  }
+
+  // Decode the encoded patch file
+  const buffer = Buffer.from(encodedPatchFile, 'base64')
+
+  // Write the decoded patch file to a temporary file
+  const tempPatchFilePath = `${filePath}.patch`
+  fs.writeFileSync(tempPatchFilePath, buffer)
+
+  // Apply the patch using the patch command
+  exec(
+    `patch ${filePath} ${tempPatchFilePath}`,
+    (error, stdout, stderr) => {
+      if (error) {
+        logger.error(`Error applying patch: ${stderr}`)
+        return res
+          .status(500)
+          .json({ error: 'Failed to apply patch' })
+      }
+
+      // Clean up the temporary patch file
+      fs.unlinkSync(tempPatchFilePath)
+
+      logger.info(`File patched successfully at ${filePath}`, {
+        stdout,
+      })
+      res.json({
+        message: `File patched successfully at ${filePath}`,
+      })
+    },
+  )
+})
+
 const port = 3000
 
 const getPersistentSnapshot = (userId: string) => {
@@ -82,7 +123,6 @@ const getActorPayload = (
   const nextEvents = __unsafe_getAllOwnEventDescriptors(snapshot)
   const context = snapshot.context
   const metaMap = snapshot.getMeta()
-
   const stateValueString = snapshot._nodes
     .filter((s) => s.type === 'atomic' || s.type === 'final')
     .map((s) => s.id)
