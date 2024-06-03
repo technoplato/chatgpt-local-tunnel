@@ -1,6 +1,11 @@
 #!/bin/bash
 
+# Example usage:
+# ./start.sh /path/to/project
+
 if [ -z "$1" ]; then
+  # Check if the first argument is empty.
+  # If it is, print the usage and exit.
   echo "Usage: $0 /path/to/project"
   exit 1
 fi
