@@ -1,6 +1,8 @@
 # Node.js dependencies
 node_modules/
 
+sessions
+
 # Environment variables
 .env
 
