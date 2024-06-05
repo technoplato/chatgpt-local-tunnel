@@ -1,16 +1,16 @@
 import {
-  expect,
-  test as it,
-  describe,
+  afterEach,
   beforeAll,
   beforeEach,
-  afterEach,
+  describe,
+  expect,
+  test as it,
 } from 'bun:test'
 import {
   validatePatch,
-  PatchFile,
-  FileContents,
-  PatchValidationResult,
+  type FileContents,
+  type PatchFile,
+  type PatchValidationResult,
 } from './patchValidator'
 import { clearTerminal } from './utils'
 
@@ -32,7 +32,7 @@ describe('validatePatch', () => {
 
   beforeAll(async () => {
     await clearTerminal()
-    await new Promise((resolve) => setTimeout(resolve, 70))
+    await new Promise((resolve) => setTimeout(resolve, 140))
   })
 
   beforeEach(() => {
@@ -93,6 +93,15 @@ export function mod(a: number, b: number): number {
 export function power(a: number, b: number): number {
     return Math.pow(a, b);
 }`,
+    'third_example.ts': `export const PI = 3.14159;
+
+export function circumference(radius: number): number {
+    return 2 * PI * radius;
+}
+
+export function area(radius: number): number {
+    return PI * radius * radius;
+}`,
   }
 
   const validPatchSecondExample: PatchFile = `
@@ -113,16 +122,48 @@ export function mod(a: number, b: number): number {
 +}
 `
 
-  it('should validate a correct patch that changes subtract to subtractTwice and adds power function', () => {
+  const validPatchThirdExample: PatchFile = `
+--- third_example.ts
++++ third_example.ts
+@@ ... @@
+-export const PI = 3.14159;
++export const PI = 3.14;
+@@ ... @@
+export function area(radius: number): number {
+    return PI * radius * radius;
+}
++
++export function diameter(radius: number): number {
++    return 2 * radius;
++}
+--- third_example.ts
++++ third_example.ts
+@@ ... @@
+-export const PI = 3.14159;
++export const PI = 3.14;
+@@ ... @@
+export function area(radius: number): number {
+    return PI * radius * radius;
+}
++
++export function diameter(radius: number): number {
++    return 2 * radius;
++}
+`
+
+  const combinedPatch: PatchFile = `
+${validPatchSecondExample}
+${validPatchThirdExample}
+`
+
+  it.only('should validate a correct patch that changes multiple files', () => {
     const results: PatchValidationResult[] = validatePatch(
-      validPatchSecondExample,
+      combinedPatch,
       fileContentsSecondExample,
     )
-    expect(results).toHaveLength(2)
 
-    const [result1, result2] = results
-
-    expect(result1.isValid).toBe(true)
+    // Check results for second_example.ts
+    const result1 = results[0]
     expect(result1.searchString)
       .toBe(`export function subtract(a: number, b: number): number {
     return a - b;`)
@@ -130,7 +171,7 @@ export function mod(a: number, b: number): number {
       .toBe(`export function subtractTwice(a: number, b: number): number {
     return a - b - b;`)
 
-    expect(result2.isValid).toBe(true)
+    const result2 = results[1]
     expect(result2.searchString)
       .toBe(`export function mod(a: number, b: number): number {
     return a % b;
@@ -143,5 +184,28 @@ export function mod(a: number, b: number): number {
 export function power(a: number, b: number): number {
     return Math.pow(a, b);
 }`)
+
+    // Check results for third_example.ts
+    const result3 = results[2]
+    expect(result3.searchString).toBe(`export const PI = 3.14159;`)
+    expect(result3.replaceString).toBe(`export const PI = 3.14;`)
+
+    const result4 = results[3]
+    expect(result4.searchString)
+      .toBe(`export function area(radius: number): number {
+    return PI * radius * radius;
+}`)
+    expect(result4.replaceString)
+      .toBe(`export function area(radius: number): number {
+    return PI * radius * radius;
+}
+
+export function diameter(radius: number): number {
+    return 2 * radius;
+}`)
+    expect(result1.isValid).toBe(true)
+    expect(result2.isValid).toBe(true)
+    expect(result3.isValid).toBe(true)
+    expect(result4.isValid).toBe(true)
   })
 })

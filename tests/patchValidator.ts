@@ -22,31 +22,59 @@ type PatchSection = {
   contextLines: string[]
 }
 
-function parsePatchFile(patchFile: PatchFile): PatchData | null {
+function parsePatchFile(patchFile: PatchFile): PatchData[] {
   const lines = patchFile
     .split('\n')
     .filter((line) => line.trim() !== '')
-  if (lines.length < 3) return null
+  const patches: PatchData[] = []
 
-  const filePath = lines[0].replace(/^--- /, '')
-  const sections: PatchSection[] = []
-
+  let currentFilePath = ''
+  let previousFilePath = ''
+  let currentSections: PatchSection[] = []
   let currentSection: PatchSection = {
     linesToRemove: [],
     linesToAdd: [],
     contextLines: [],
   }
 
-  for (let i = 2; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
 
-    if (line.startsWith('@@')) {
+    if (line.startsWith('--- ')) {
+      if (currentFilePath && currentSections.length > 0) {
+        patches.push({
+          filePath: currentFilePath,
+          sections: currentSections,
+        })
+      }
+      currentFilePath = line.replace(/^--- /, '')
+      if (currentFilePath !== previousFilePath) {
+        patches.push({
+          filePath: currentFilePath,
+          sections: currentSections,
+        })
+      }
+      previousFilePath = currentFilePath
+      currentSections = []
+      currentSection = {
+        linesToRemove: [],
+        linesToAdd: [],
+        contextLines: [],
+      }
+    } else if (line.startsWith('+++ ')) {
+      const newFilePath = line.replace(/^(\+\+\+ )/, '')
+      if (newFilePath !== currentFilePath) {
+        throw new Error(
+          `Mismatched file paths: ${currentFilePath} and ${newFilePath}`,
+        )
+      }
+    } else if (line.startsWith('@@')) {
       if (
         currentSection.linesToRemove.length ||
         currentSection.linesToAdd.length ||
         currentSection.contextLines.length
       ) {
-        sections.push(currentSection)
+        currentSections.push(currentSection)
       }
       currentSection = {
         linesToRemove: [],
@@ -54,23 +82,43 @@ function parsePatchFile(patchFile: PatchFile): PatchData | null {
         contextLines: [],
       }
     } else if (line.startsWith('-')) {
-      currentSection.linesToRemove.push(line.substring(1))
+      if (line === '-') {
+        currentSection.linesToRemove.push('\n')
+      } else {
+        currentSection.linesToRemove.push(line.substring(1))
+      }
     } else if (line.startsWith('+')) {
-      currentSection.linesToAdd.push(line.substring(1))
+      if (line === '+') {
+        currentSection.linesToAdd.push('\n')
+      } else {
+        currentSection.linesToAdd.push(line.substring(1))
+      }
     } else {
       currentSection.contextLines.push(line)
     }
   }
 
-  if (
-    currentSection.linesToRemove.length ||
-    currentSection.linesToAdd.length ||
-    currentSection.contextLines.length
+  if (currentFilePath && currentSections.length > 0) {
+    if (
+      currentSection.linesToRemove.length ||
+      currentSection.linesToAdd.length ||
+      currentSection.contextLines.length
+    ) {
+      currentSections.push(currentSection)
+    }
+  } else if (
+    currentFilePath
+    // Object.values(currentSection).some((x) => x?.length > 0)
   ) {
-    sections.push(currentSection)
+    currentSections = [currentSection]
   }
 
-  return { filePath, sections }
+  patches.push({
+    filePath: currentFilePath,
+    sections: currentSections,
+  })
+
+  return patches
 }
 
 function wrapWithPoundSymbols(message: string): string {
@@ -89,64 +137,65 @@ function validatePatch(
   fileContents: FileContents,
 ): PatchValidationResult[] {
   const patchData = parsePatchFile(patchFile)
-  if (!patchData) {
-    return [{ isValid: false, errors: ['Invalid patch file format'] }]
-  }
-
-  const { filePath, sections } = patchData
-  const originalContent = fileContents[filePath]
-
-  if (!originalContent) {
-    return [
-      { isValid: false, errors: [`File not found: ${filePath}`] },
-    ]
-  }
-
   const results: PatchValidationResult[] = []
 
-  for (const section of sections) {
-    console.log('\n\n')
-    const { linesToRemove, contextLines } = section
-    const searchString = [...contextLines, ...linesToRemove].join(
-      '\n',
-    )
-    const replaceString = [
-      ...contextLines,
-      ...section.linesToAdd,
-    ].join('\n')
+  patchData.forEach(({ filePath, sections }) => {
+    const originalContent = fileContents[filePath]
+
+    if (!originalContent) {
+      results.push({
+        isValid: false,
+        errors: [`File not found: ${filePath}`],
+      })
+      return
+    }
 
     console.log(
       'Original Content:',
       wrapWithPoundSymbols(originalContent),
     )
     console.log('Patch', wrapWithPoundSymbols(patchFile))
-    console.log('Search String:', wrapWithPoundSymbols(searchString))
-    console.log(
-      'Replace String:',
-      wrapWithPoundSymbols(replaceString),
-    )
+    sections.forEach((section) => {
+      const { linesToRemove, contextLines } = section
+      const searchString = [...contextLines, ...linesToRemove].join(
+        '\n',
+      )
+      const replaceString = [
+        ...contextLines,
+        ...section.linesToAdd,
+      ].join('\n')
 
-    if (!originalContent.includes(searchString)) {
-      results.push({
-        isValid: false,
-        errors: [
-          'Patch context does not match original file content',
-        ],
-        searchString,
-        replaceString,
-      })
-    } else {
-      results.push({
-        isValid: true,
-        searchString,
-        replaceString,
-      })
-    }
-  }
+      console.log(
+        'Search String:',
+        wrapWithPoundSymbols(searchString),
+      )
+      console.log(
+        'Replace String:',
+        wrapWithPoundSymbols(replaceString),
+      )
+
+      if (!originalContent.includes(searchString)) {
+        results.push({
+          isValid: false,
+          errors: [
+            'Patch context does not match original file content',
+          ],
+          searchString,
+          replaceString,
+        })
+      } else {
+        results.push({
+          isValid: true,
+          searchString,
+          replaceString,
+        })
+      }
+    })
+  })
 
   return results
 }
 
 export { validatePatch }
 
-export type { PatchFile, FileContents, PatchValidationResult }
+export type { FileContents, PatchFile, PatchValidationResult }
