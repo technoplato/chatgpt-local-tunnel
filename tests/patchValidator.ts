@@ -111,6 +111,7 @@ function validatePatch(
       '\n',
     )
 
+    console.log('Patch', wrapWithPoundSymbols(patchFile))
     console.log('Search String:', wrapWithPoundSymbols(searchString))
     console.log(
       '\nReplace String:',

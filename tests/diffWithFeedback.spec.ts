@@ -1,4 +1,11 @@
-import { expect, test as it, describe, beforeEach } from 'bun:test'
+import {
+  expect,
+  test as it,
+  describe,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'bun:test'
 import {
   type FileContents,
   type PatchFile,
@@ -23,9 +30,28 @@ describe('validatePatch', () => {
     print("Hello, world!")`,
   }
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     await clearTerminal()
     await new Promise((resolve) => setTimeout(resolve, 70))
+    //   print out a big separator to announce a new test
+  })
+
+  beforeEach(() => {
+    console.log(
+      '====================================================',
+    )
+    console.log(
+      '====================================================\n\n',
+    )
+  })
+
+  afterEach(() => {
+    console.log(
+      '====================================================',
+    )
+    console.log(
+      '====================================================\n\n',
+    )
   })
 
   it('should validate a correct patch that changes a print statement', () => {
