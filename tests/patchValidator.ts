@@ -1,3 +1,5 @@
+import { log } from 'xstate'
+
 type PatchFile = string
 
 type FileContents = {
@@ -72,6 +74,18 @@ function parsePatchFile(patchFile: PatchFile): PatchData | null {
 
   return { filePath, sections }
 }
+
+function wrapWithPoundSymbols(message: string): string {
+  const lines = message.split('\n')
+  const maxLength = Math.max(...lines.map((line) => line.length))
+  const border = '#'.repeat(maxLength + 4)
+
+  const framedLines = lines.map(
+    (line) => `# ${line.padEnd(maxLength)} #`,
+  )
+  return `\n${border}\n${framedLines.join('\n')}\n${border}`
+}
+
 function validatePatch(
   patchFile: PatchFile,
   fileContents: FileContents,
@@ -97,9 +111,15 @@ function validatePatch(
       '\n',
     )
 
-    console.log('Search String:', searchString)
-    console.log('Replace String:', replaceString)
-    console.log('Original Content:', originalContent)
+    console.log('Search String:', wrapWithPoundSymbols(searchString))
+    console.log(
+      '\nReplace String:',
+      wrapWithPoundSymbols(replaceString),
+    )
+    console.log(
+      'Original Content:',
+      wrapWithPoundSymbols(originalContent),
+    )
 
     if (!originalContent.includes(searchString)) {
       return {
