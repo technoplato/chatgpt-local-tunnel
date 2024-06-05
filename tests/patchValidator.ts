@@ -87,28 +87,34 @@ function wrapWithPoundSymbols(message: string): string {
 function validatePatch(
   patchFile: PatchFile,
   fileContents: FileContents,
-): PatchValidationResult {
+): PatchValidationResult[] {
   const patchData = parsePatchFile(patchFile)
   if (!patchData) {
-    return { isValid: false, errors: ['Invalid patch file format'] }
+    return [{ isValid: false, errors: ['Invalid patch file format'] }]
   }
 
   const { filePath, sections } = patchData
   const originalContent = fileContents[filePath]
 
   if (!originalContent) {
-    return { isValid: false, errors: [`File not found: ${filePath}`] }
+    return [
+      { isValid: false, errors: [`File not found: ${filePath}`] },
+    ]
   }
-  let searchString = ''
-  let replaceString = ''
+
+  const results: PatchValidationResult[] = []
 
   for (const section of sections) {
     console.log('\n\n')
     const { linesToRemove, contextLines } = section
-    searchString = [...contextLines, ...linesToRemove].join('\n')
-    replaceString = [...contextLines, ...section.linesToAdd].join(
+    const searchString = [...contextLines, ...linesToRemove].join(
       '\n',
     )
+    const replaceString = [
+      ...contextLines,
+      ...section.linesToAdd,
+    ].join('\n')
+
     console.log(
       'Original Content:',
       wrapWithPoundSymbols(originalContent),
@@ -121,25 +127,26 @@ function validatePatch(
     )
 
     if (!originalContent.includes(searchString)) {
-      return {
+      results.push({
         isValid: false,
         errors: [
           'Patch context does not match original file content',
         ],
         searchString,
         replaceString,
-      }
+      })
+    } else {
+      results.push({
+        isValid: true,
+        searchString,
+        replaceString,
+      })
     }
   }
 
-  return {
-    isValid: true,
-    searchString,
-    replaceString,
-  }
+  return results
 }
 
-// Export functions for testing
 export { validatePatch }
 
 export type { PatchFile, FileContents, PatchValidationResult }

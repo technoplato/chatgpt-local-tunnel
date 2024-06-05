@@ -7,12 +7,12 @@ import {
   afterEach,
 } from 'bun:test'
 import {
-  type FileContents,
-  type PatchFile,
-  type PatchValidationResult,
   validatePatch,
-} from './patchValidator.ts'
-import { clearTerminal } from './utils.ts'
+  PatchFile,
+  FileContents,
+  PatchValidationResult,
+} from './patchValidator'
+import { clearTerminal } from './utils'
 
 describe('validatePatch', () => {
   const validPatch: PatchFile = `
@@ -33,7 +33,6 @@ describe('validatePatch', () => {
   beforeAll(async () => {
     await clearTerminal()
     await new Promise((resolve) => setTimeout(resolve, 70))
-    //   print out a big separator to announce a new test
   })
 
   beforeEach(() => {
@@ -55,10 +54,11 @@ describe('validatePatch', () => {
   })
 
   it('should validate a correct patch that changes a print statement', () => {
-    const result: PatchValidationResult = validatePatch(
+    const results: PatchValidationResult[] = validatePatch(
       validPatch,
       fileContents,
     )
+    const result = results[0]
     expect(result.isValid).toBe(true)
     expect(result.searchString).toBe(`def hello():
     print("Hello, world!")`)
@@ -114,16 +114,34 @@ export function mod(a: number, b: number): number {
 `
 
   it('should validate a correct patch that changes subtract to subtractTwice and adds power function', () => {
-    const result: PatchValidationResult = validatePatch(
+    const results: PatchValidationResult[] = validatePatch(
       validPatchSecondExample,
       fileContentsSecondExample,
     )
-    expect(result.isValid).toBe(true)
-    expect(result.searchString)
+    expect(results).toHaveLength(2)
+
+    const [result1, result2] = results
+
+    expect(result1.isValid).toBe(true)
+    expect(result1.searchString)
       .toBe(`export function subtract(a: number, b: number): number {
- return a - b;`)
-    expect(result.replaceString)
+    return a - b;`)
+    expect(result1.replaceString)
       .toBe(`export function subtractTwice(a: number, b: number): number {
     return a - b - b;`)
+
+    expect(result2.isValid).toBe(true)
+    expect(result2.searchString)
+      .toBe(`export function mod(a: number, b: number): number {
+    return a % b;
+}`)
+    expect(result2.replaceString)
+      .toBe(`export function mod(a: number, b: number): number {
+    return a % b;
+}
+
+export function power(a: number, b: number): number {
+    return Math.pow(a, b);
+}`)
   })
 })
