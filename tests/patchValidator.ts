@@ -1,5 +1,3 @@
-import { log } from 'xstate'
-
 type PatchFile = string
 
 type FileContents = {
@@ -105,21 +103,21 @@ function validatePatch(
   let replaceString = ''
 
   for (const section of sections) {
+    console.log('\n\n')
     const { linesToRemove, contextLines } = section
     searchString = [...contextLines, ...linesToRemove].join('\n')
     replaceString = [...contextLines, ...section.linesToAdd].join(
       '\n',
     )
-
-    console.log('Patch', wrapWithPoundSymbols(patchFile))
-    console.log('Search String:', wrapWithPoundSymbols(searchString))
-    console.log(
-      '\nReplace String:',
-      wrapWithPoundSymbols(replaceString),
-    )
     console.log(
       'Original Content:',
       wrapWithPoundSymbols(originalContent),
+    )
+    console.log('Patch', wrapWithPoundSymbols(patchFile))
+    console.log('Search String:', wrapWithPoundSymbols(searchString))
+    console.log(
+      'Replace String:',
+      wrapWithPoundSymbols(replaceString),
     )
 
     if (!originalContent.includes(searchString)) {

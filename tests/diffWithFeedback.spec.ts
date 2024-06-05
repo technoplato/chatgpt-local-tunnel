@@ -66,20 +66,6 @@ describe('validatePatch', () => {
     print("Hello, Universe!")`)
   })
 
-  const validPatchSecondExample: PatchFile = `
---- second_example.ts
-+++ second_example.ts
-@@ ... @@
--export function subtract(a: number, b: number): number {
--    return a - b;
-+export function subtractTwice(a: number, b: number): number {
-+    return a - b - b;
-@@ ... @@
-+export function power(a: number, b: number): number {
-+    return Math.pow(a, b);
-+}
-`
-
   const fileContentsSecondExample: FileContents = {
     'second_example.ts': `export function add(a: number, b: number): number {
     return a + b;
@@ -108,6 +94,24 @@ export function power(a: number, b: number): number {
     return Math.pow(a, b);
 }`,
   }
+
+  const validPatchSecondExample: PatchFile = `
+--- second_example.ts
++++ second_example.ts
+@@ ... @@
+-export function subtract(a: number, b: number): number {
+-    return a - b;
++export function subtractTwice(a: number, b: number): number {
++    return a - b - b;
+@@ ... @@
+export function mod(a: number, b: number): number {
+    return a % b;
+}
++
++export function power(a: number, b: number): number {
++    return Math.pow(a, b);
++}
+`
 
   it('should validate a correct patch that changes subtract to subtractTwice and adds power function', () => {
     const result: PatchValidationResult = validatePatch(
