@@ -80,73 +80,73 @@ paths:
 
 
 
-  /createWidget:
-    post:
-      operationId: createWidget
-      summary: Creates a widget based on an image.
-      description: Uploads a file reference using its file id. This file should be an image created by DALL·E or uploaded by the user. JPG, WEBP, and PNG are supported for widget creation.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                openaiFileIdRefs:
-                  type: array
-                  items:
-                    type: string
+#  /createWidget:
+#    post:
+#      operationId: createWidget
+#      summary: Creates a widget based on an image.
+#      description: Uploads a file reference using its file id. This file should be an image created by DALL·E or uploaded by the user. JPG, WEBP, and PNG are supported for widget creation.
+#      requestBody:
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              type: object
+#              properties:
+#                openaiFileIdRefs:
+#                  type: array
+#                  items:
+#                    type: string
 
-  /encodedPatchFile:
-    post:
-      x-openai-isConsequential: false
-      summary: Upload an encoded file patch which will be applied to the specified path
-      operationId: encodedPatchFile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                encodedPatchFile:
-                  type: string
-                  example: "base64_encoded_content_here"
-                filePath:
-                  type: string
-                  description: The path to the file to be patched
-                  example: "/full/path/to/file.txt"
-      responses:
-        '200':
-          description: File patched successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: File patched successfully to /full/path/to/file.txt
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: encodedPatchFile and filePath are required
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Error patching file
+#  /encodedPatchFile:
+#    post:
+#      x-openai-isConsequential: false
+#      summary: Upload an encoded file patch which will be applied to the specified path
+#      operationId: encodedPatchFile
+#      requestBody:
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              type: object
+#              properties:
+#                encodedPatchFile:
+#                  type: string
+#                  example: "base64_encoded_content_here"
+#                filePath:
+#                  type: string
+#                  description: The path to the file to be patched
+#                  example: "/full/path/to/file.txt"
+#      responses:
+#        '200':
+#          description: File patched successfully
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  message:
+#                    type: string
+#                    example: File patched successfully to /full/path/to/file.txt
+#        '400':
+#          description: Bad request
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  error:
+#                    type: string
+#                    example: encodedPatchFile and filePath are required
+#        '500':
+#          description: Server error
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  error:
+#                    type: string
+#                    example: Error patching file
 
 #  /files:
 #    post:

@@ -13,6 +13,20 @@ fi
 PROJECT_PATH=$(realpath "$1")
 export PROJECT_PATH
 
+# Check if Docker is running on macOS
+if ! docker info >/dev/null 2>&1; then
+  echo "Docker is not running. Starting Docker..."
+  open --background -a Docker
+  while ! docker info >/dev/null 2>&1; do
+    # Wait until Docker daemon is running
+    echo "Waiting for Docker to start..."
+    sleep 1
+  done
+  echo "Docker started."
+else
+  echo "Docker is already running."
+fi
+
 # Retrieve Git user name and email
 GIT_USER_NAME=$(git config --global user.name)
 GIT_USER_EMAIL=$(git config --global user.email)
