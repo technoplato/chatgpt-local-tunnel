@@ -1,5 +1,5 @@
 fn main() {
-    println!("Hello, world!");
+    println!("Hello, changed world!");
 }
 
 // More Rust code here to make it about 60 lines long
@@ -15,6 +15,7 @@ mod tests {
     #[test]
     fn test_add() {
         assert_eq!(add(2, 3), 5);
+        assert_eq!(add(3, 3), 6); // New test
     }
 }
 
@@ -47,4 +48,7 @@ fn main() {
         Some(result) => println!("Divide: {}", result),
         None => println!("Cannot divide by zero"),
     }
+
+    // New functionality
+    println!("End of program");
 }

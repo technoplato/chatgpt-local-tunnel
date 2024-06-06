@@ -1,4 +1,4 @@
-console.log("Hello, TypeScript");
+console.log("Hello, TypeScript Changed");
 
 // TypeScript code here
 
@@ -23,6 +23,11 @@ function divide(a: number, b: number): number | null {
     }
 }
 
+// New function
+function modulo(a: number, b: number): number {
+    return a % b;
+}
+
 // Main function
 function main() {
     const x = 10;
@@ -37,6 +42,9 @@ function main() {
     } else {
         console.log("Cannot divide by zero");
     }
+
+    // New functionality
+    console.log(`Modulo: ${modulo(x, y)}`);
 }
 
 main();
