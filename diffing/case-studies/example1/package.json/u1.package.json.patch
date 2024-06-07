@@ -1,5 +1,5 @@
---- /usr/src/project/diffing/case-studies/example1/package.json/base.package.json	2024-06-06 23:30:49.319690756 +0000
-+++ /usr/src/project/diffing/case-studies/example1/package.json/changed.package.json	2024-06-06 23:35:49.377392022 +0000
+--- /project/diffing/case-studies/example1/package.json/base.package.json	2024-06-06 23:30:49.319690756 +0000
++++ /project/diffing/case-studies/example1/package.json/changed.package.json	2024-06-06 23:35:49.377392022 +0000
 @@ -2,3 +2,3 @@
 -  "name": "example",
 -  "version": "1.0.0",

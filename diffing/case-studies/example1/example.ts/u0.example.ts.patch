@@ -1,5 +1,5 @@
---- /usr/src/project/diffing/case-studies/example1/base/example.ts	2024-06-06 23:31:09.903432663 +0000
-+++ /usr/src/project/diffing/case-studies/example1/changed/example.ts	2024-06-06 23:36:09.012583468 +0000
+--- /project/diffing/case-studies/example1/base/example.ts	2024-06-06 23:31:09.903432663 +0000
++++ /project/diffing/case-studies/example1/changed/example.ts	2024-06-06 23:36:09.012583468 +0000
 @@ -1 +1 @@
 -console.log("Hello, TypeScript");
 +console.log("Hello, TypeScript Changed");

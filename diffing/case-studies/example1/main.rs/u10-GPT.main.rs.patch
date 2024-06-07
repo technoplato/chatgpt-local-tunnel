@@ -1,39 +1,39 @@
---- /project/diffing/case-studies/example1/main.rs/base.main.rs	2024-06-06 23:31:00.204962282 +0000
-+++ /project/diffing/case-studies/example1/main.rs/changed.main.rs	2024-06-06 23:35:59.895138921 +0000
-@@ -1,27 +1,28 @@
+--- project/diffing-case-studies/example1/main.rs/base.main.rs
++++ project/diffing-casestudies/example1/main.rs/changed.main.rs
+@@ ... @@
  fn main() {
 -    println!("Hello, world!");
 +    println!("Hello, changed world!");
  }
- 
+
  // More Rust code here to make it about 60 lines long
- 
+
  fn add(a: i32, b: i32) -> i32 {
      a + b
  }
- 
+
  #[cfg(test)]
  mod tests {
      use super::*;
- 
+
      #[test]
      fn test_add() {
          assert_eq!(add(2, 3), 5);
 +        assert_eq!(add(3, 3), 6); // New test
      }
  }
- 
+
  // Additional functions
  fn subtract(a: i32, b: i32) -> i32 {
      a - b
  }
- 
+
  fn multiply(a: i32, b: i32) -> i32 {
      a * b
-@@ -40,11 +41,14 @@
+@@ ... @@
      let x = 10;
      let y = 5;
- 
+
      println!("Add: {}", add(x, y));
      println!("Subtract: {}", subtract(x, y));
      println!("Multiply: {}", multiply(x, y));

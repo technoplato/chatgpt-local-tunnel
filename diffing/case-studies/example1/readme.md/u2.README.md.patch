@@ -1,5 +1,5 @@
---- /usr/src/project/diffing/case-studies/example1/readme.md/base.README.md	2024-06-06 23:31:14.071392424 +0000
-+++ /usr/src/project/diffing/case-studies/example1/readme.md/changed.README.md	2024-06-06 23:36:13.443713981 +0000
+--- /project/diffing/case-studies/example1/readme.md/base.README.md	2024-06-06 23:31:14.071392424 +0000
++++ /project/diffing/case-studies/example1/readme.md/changed.README.md	2024-06-06 23:36:13.443713981 +0000
 @@ -1,5 +1,5 @@
 -# Example Project
 +# Example Project (Changed)
