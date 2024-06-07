@@ -1,0 +1,9 @@
+[
+  {
+    isValid: false,
+    errors: [ "Patch context does not match original file content" ],
+    searchString: " ## Contents\n - Rust source code\n - Cargo.toml\n - package.json\n - TypeScript file\n - README\n# Example Project\nThis is an example project to test various diffing strategies.",
+    replaceString: " ## Contents\n - Rust source code\n - Cargo.toml\n - package.json\n - TypeScript file\n - README\n# Example Project (Changed)\nThis is an updated example project to test various diffing strategies.\n## Changes\n\n\n- Added new dependencies in Cargo.toml and package.json\n- Updated the Rust and TypeScript files with additional functionality and tests\n- Modified the README file",
+    originalContent: "# Example Project\n\nThis is an example project to test various diffing strategies.\n\n## Contents\n\n- Rust source code\n- Cargo.toml\n- package.json\n- TypeScript file\n- README\n\n",
+  }
+]

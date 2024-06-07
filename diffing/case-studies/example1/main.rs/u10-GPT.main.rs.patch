@@ -1,5 +1,5 @@
 --- project/diffing-case-studies/example1/main.rs/base.main.rs
-+++ project/diffing-casestudies/example1/main.rs/changed.main.rs
++++ project/diffing-casestudies/example1/main.rs/base.main.rs
 @@ ... @@
  fn main() {
 -    println!("Hello, world!");
