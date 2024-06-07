@@ -1,13 +1,12 @@
---- diffing/case-studies/example1/base/README.md
-+++ diffing/case-studies/example1/changed/README.md
+--- diffing-casestudies/example1/base/README.md
++++ diffing-casestudies/example1/changed/README.md
 @@ ... @@
- ## Contents
- 
- - Rust source code
- - Cargo.toml
- - package.json
- - TypeScript file
- - README
+-# Example Project
++# Example Project (Changed)
+@@ ... @@
+-This is an example project to test various diffing strategies.
++This is an updated example project to test various diffing strategies.
+@@ ... @@
 +
 +## Changes
 +
@@ -15,3 +14,4 @@
 +- Updated the Rust and TypeScript files with additional functionality and tests
 +- Modified the README file
 
+@@ ... @@

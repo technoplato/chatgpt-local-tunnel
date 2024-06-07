@@ -1,0 +1,17 @@
+--- diffing/case-studies/example1/base/example.ts
++++ diffing-casestudies/example1/changed/example.ts
+@@ ... @@
+@@ ... @@
+-console.log("Hello, TypeScript");
++console.log("Hello, TypeScript Changed");
+@@ ... @@
++// New function
++function modulo(a: number, b: number): number {
++    return a % b;
++}
++
+@@ ... @@
++
++    // New functionality
++    console.log(`Modulo: ${modulo(x, y)}`);
+

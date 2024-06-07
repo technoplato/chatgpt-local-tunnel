@@ -13,7 +13,54 @@
 
 5. **Anchor Changes**:
    - Anchor changes to logical points in the code, such as the beginning or end of the file, or specific sections like function definitions or test cases.
-   - If a block of changes occurs at the end of a file, ensure the hunk includes the context to properly anchor it.
+   - If a block of changes occurs at the end of a file,
+     ensure the hunk includes removing the previous 
+     end of the file as - and adds it back in the new 
+     file with + in the hunk so we can properly 
+     identify its intended position without line numbers.
+
+5.example
+
+5.original 
+
+```md
+# Example Project
+
+This is an example project to test various diffing strategies.
+
+## Contents
+
+- Rust source code
+- Cargo.toml
+- package.json
+- TypeScript file
+- README
+```
+
+```diff
+--- diffing-casestudies/example1/base/README.md
++++ diffing-casestudies/example1/changed/README.md
+@@ ... @@
+-# Example Project
++# Example Project (Changed)
+@@ ... @@
+-This is an example project to test various diffing strategies.
++This is an updated example project to test various diffing strategies.
+@@ ... @@
+ ## Contents
+
+ - Rust source code
+ - Cargo.toml
+ - package.json
+ - TypeScript file
+ - README
++
++## Changes
++
++- Added new dependencies in Cargo.toml and package.json
++- Updated the Rust and TypeScript files with additional functionality and tests
++- Modified the README file
+```
 
 6. **Maintain Consistency**:
    - Ensure that the patch maintains consistent formatting and indentation.
@@ -27,7 +74,7 @@
    - For file movements, create two hunks: one to delete from the old location and another to insert in the new location.
 
 ### Example Conversion Steps
-
+diff -U0 example1/base/main.rs example1/changed/main.rs > example1/patches/U0/main.rs.patch
 1. **Original Diff**:
    ```diff
    --- a/example1/base/main.rs 2024-06-06 23:31:00.204962282 +0000
