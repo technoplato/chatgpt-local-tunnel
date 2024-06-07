@@ -1,0 +1,42 @@
+--- /usr/src/project/diffing/case-studies/example1/example.ts/base.example.ts	2024-06-06 23:31:09.903432663 +0000
++++ /usr/src/project/diffing/case-studies/example1/example.ts/changed.example.ts	2024-06-06 23:36:09.012583468 +0000
+@@ -1,7 +1,7 @@
+-console.log("Hello, TypeScript");
++console.log("Hello, TypeScript Changed");
+ 
+ // TypeScript code here
+ 
+ function add(a: number, b: number): number {
+     return a + b;
+ }
+@@ -20,12 +20,17 @@
+         return null;
+     } else {
+         return a / b;
+     }
+ }
+ 
++// New function
++function modulo(a: number, b: number): number {
++    return a % b;
++}
++
+ // Main function
+ function main() {
+     const x = 10;
+     const y = 5;
+ 
+     console.log(`Add: ${add(x, y)}`);
+@@ -34,9 +39,12 @@
+     const result = divide(x, y);
+     if (result !== null) {
+         console.log(`Divide: ${result}`);
+     } else {
+         console.log("Cannot divide by zero");
+     }
++
++    // New functionality
++    console.log(`Modulo: ${modulo(x, y)}`);
+ }
+ 
+ main();

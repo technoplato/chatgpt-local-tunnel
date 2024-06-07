@@ -1,0 +1,11 @@
+--- /usr/src/project/diffing/case-studies/example1/main.rs/base.main.rs	2024-06-06 23:31:00.204962282 +0000
++++ /usr/src/project/diffing/case-studies/example1/main.rs/changed.main.rs	2024-06-06 23:35:59.895138921 +0000
+@@ -2 +2 @@
+-    println!("Hello, world!");
++    println!("Hello, changed world!");
+@@ -17,0 +18 @@
++        assert_eq!(add(3, 3), 6); // New test
+@@ -49,0 +51,3 @@
++
++    // New functionality
++    println!("End of program");
