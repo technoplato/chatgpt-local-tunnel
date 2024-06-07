@@ -4,7 +4,7 @@
 
 ### Guidelines for Creating Diffs
 
-1. **Unified Diff Format**: Use unified diffs for code changes, similar to the output of `diff -U0`. Include the first two lines with file paths but exclude timestamps and line numbers.
+1. **Unified Diff Format**: Use unified diffs for code changes, similar to the output of `diff -U1`. Include the first two lines with file paths but exclude timestamps and line numbers.
 2. **Patch Application**: Ensure patches apply cleanly against the current contents of the file. Think carefully and mark all lines that need removal or changes with `-`, and all new or modified lines with `+`.
 3. **Indentation**: Maintain correct indentation in diffs. Indentation errors can prevent the patch from applying correctly.
 4. **Hunk Creation**: Create a new hunk for each file section that needs changes. Only output hunks that specify changes (`+` or `-` lines), and skip entirely unchanging (` `) lines.

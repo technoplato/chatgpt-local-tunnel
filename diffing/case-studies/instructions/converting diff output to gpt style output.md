@@ -17,6 +17,8 @@
      ensure the hunk includes the previous 
      end of the file as context so we can identify its 
      intended position without line numbers.
+   - All hunks should have at least one line of context before and after the changes.
+   - If a hunk just contains + lines, you are fired
 
 5.example
 
