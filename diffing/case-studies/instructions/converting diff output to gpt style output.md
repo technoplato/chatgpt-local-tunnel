@@ -14,10 +14,9 @@
 5. **Anchor Changes**:
    - Anchor changes to logical points in the code, such as the beginning or end of the file, or specific sections like function definitions or test cases.
    - If a block of changes occurs at the end of a file,
-     ensure the hunk includes removing the previous 
-     end of the file as - and adds it back in the new 
-     file with + in the hunk so we can properly 
-     identify its intended position without line numbers.
+     ensure the hunk includes the previous 
+     end of the file as context so we can identify its 
+     intended position without line numbers.
 
 5.example
 
@@ -27,6 +26,9 @@
 # Example Project
 
 This is an example project to test various diffing strategies.
+
+NOTE: The changes applied to the bottom of the file
+use the context from the bottom of the file.
 
 ## Contents
 
