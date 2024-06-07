@@ -1,0 +1,22 @@
+--- README.md
++++ README.md
+@@ -1,6 +1,11 @@
+ 1 # Example Project
+
+-2 This is an example project to test various diffing strategies.
++2 This is an updated example project to test various diffing strategies.
+
+ 3 ## Contents
+
+ 4 - Rust source code
+ 5 - Cargo.toml
+ 6 - package.json
+ 7 - TypeScript file
+ 8 - README
+
++9 ## Changes
+
++10 - Added new dependencies in Cargo.toml and package.json
++11 - Updated the Rust and TypeScript files with additional functionality and tests
++12 - Modified the README file
+

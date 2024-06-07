@@ -151,25 +151,36 @@ const getActorPayload = (
   const topLevelMeta =
     metaMap[GptCoordinatorMachineId]?.hintsForGpt ?? ''
 
-  const header = `
- \n---------------------------------------------------------\n
- Hints for this entire process:
- \n---------------------------------------------------------\n
- `
+  //  const header = `
+  // \n---------------------------------------------------------\n
+  // Hints for this entire process:
+  // \n---------------------------------------------------------\n
+  // `
+  //
+  //  const divider = `
+  // \n---------------------------------------------------------\n
+  // Hints specific to this state: ${stateValueString}
+  // \n---------------------------------------------------------\n
+  // `
+  //  const combinedHintsForGpt =
+  //    header + topLevelMeta + divider + stateMeta
 
-  const divider = `
- \n---------------------------------------------------------\n
- Hints specific to this state: ${stateValueString}
- \n---------------------------------------------------------\n
- `
-  const combinedHintsForGpt =
-    header + topLevelMeta + divider + stateMeta
+  const diffHintsForGpt = `
+1.Unified Diff Format: Use unified diffs for code changes, similar to the output of diff -U0. Include the first two lines with file paths but exclude timestamps and line numbers.
+2.Patch Application: Ensure patches apply cleanly against the current contents of the file. Think carefully and mark all lines that need removal or changes with -, and all new or modified lines with +.
+3.Indentation: Maintain correct indentation in diffs. Indentation errors can prevent the patch from applying correctly.
+4.Hunk Creation: Create a new hunk for each file section that needs changes. Only output hunks that specify changes (+ or - lines), and skip entirely unchanging ( ) lines.
+5.High-Level Edits: Encourage high-level edits by replacing entire code blocks (functions, methods, loops) rather than making minimal line-by-line changes.
+6.File Movements: Use two hunks to move code within a file: one to delete it from its current location and another to insert it in the new location.
+7.New Files: To create a new file, show a diff from --- /dev/null to +++ path/to/new/file.ext.
+8.Error Handling: Handle potential errors such as non-matching lines and non-unique matches by providing additional context or correcting the diff format. Ensure the diff applies cleanly and correctly to the file.  
+  `
 
   return {
     state,
     context,
     nextEvents,
-    hintsForGpt: combinedHintsForGpt,
+    hintsForGpt: diffHintsForGpt,
   }
 }
 
@@ -299,19 +310,26 @@ app.post('/run-command', async (req, res) => {
     command,
     { cwd: envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION },
     (err, stdout, stderr) => {
-      if (err) {
-        logger.error('Command execution error', { stderr })
-        return res.status(500).json({ error: stderr })
+      if (stderr) {
+        logger.error('Command execution error', {
+          stderr,
+          stdout,
+          err,
+        })
+        return res
+          .status(500)
+          .json({ error: stderr, output: stdout, err })
       }
 
       logger.info(
         'Command executed and changes committed successfully',
-        { stdout },
+        { stdout, stderr },
       )
       res.json({
         message:
           'Command executed and changes committed successfully',
         output: stdout,
+        error: stderr,
       })
     },
   )

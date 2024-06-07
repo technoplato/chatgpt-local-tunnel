@@ -1,0 +1,15 @@
+--- Cargo.toml
++++ Cargo.toml
+@@ -1,6 +1,7 @@
+ 1 [package]
+-2 name = "example"
+-3 version = "0.1.0"
+-4 authors = ["Your Name <you@example.com>"]
++2 name = "example_changed"
++3 version = "0.2.0"
++4 authors = ["Your New Name <newemail@example.com>"]
+ 5 edition = "2018"
+ 
+ 6 [dependencies]
++7 serde = "1.0"
+
