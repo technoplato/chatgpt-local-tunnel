@@ -12,47 +12,12 @@ import {
 } from './src/gptCoordinator/gptCoordinatorMachine.ts'
 import * as fs from 'fs'
 import { exec } from 'child_process'
-import winston from 'winston'
 import dotenv from 'dotenv'
 import { envParsedWithTypes } from './ENV/env.config.ts'
 import axios from 'axios'
+import { logger } from './logging.ts'
 
 dotenv.config()
-
-// Custom log format
-const customFormat = winston.format.printf(
-  ({ level, message, timestamp, ...meta }) => {
-    return `${timestamp} [${level}]: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`
-  },
-)
-
-// Setup Winston logger
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    customFormat,
-  ),
-  transports: [
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-    }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-  ],
-})
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp(),
-        customFormat,
-      ),
-    }),
-  )
-}
 
 logger.info('Server started and logger initialized.')
 const app = express()
@@ -98,15 +63,15 @@ const getActorPayload = (
     metaMap[GptCoordinatorMachineId]?.hintsForGpt ?? ''
 
   const header = `
-  \n---------------------------------------------------------\n
+  \\n---------------------------------------------------------\\n
   Hints for this entire process:
-  \n---------------------------------------------------------\n
+  \\n---------------------------------------------------------\\n
   `
 
   const divider = `
-  \n---------------------------------------------------------\n
+  \\n---------------------------------------------------------\\n
   Hints specific to this state: ${stateValueString}
-  \n---------------------------------------------------------\n
+  \\n---------------------------------------------------------\\n
   `
   const combinedHintsForGpt =
     header + topLevelMeta + divider + stateMeta
