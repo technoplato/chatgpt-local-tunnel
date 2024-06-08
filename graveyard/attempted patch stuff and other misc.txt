@@ -1,0 +1,238 @@
+diff --git a/server.ts b/server.ts
+index 04dc591..de8541c 100644
+--- a/server.ts
++++ b/server.ts
+@@ -58,60 +58,6 @@ logger.info('Server started and logger initialized.')
+ const app = express()
+ app.use(express.json())
+
+-// app.post('/encodedPatchFile', (req, res) => {
+-//   const { encodedPatchFile, filePath } = req.body
+-//
+-//   if (!encodedPatchFile || !filePath) {
+-//     logger.error('encodedPatchFile and filePath are required')
+-//     return res
+-//       .status(400)
+-//       .json({ error: 'encodedPatchFile and filePath are required' })
+-//   }
+-//
+-//   // Decode the encoded patch file
+-//   const buffer = Buffer.from(encodedPatchFile, 'base64')
+-//
+-//   // Write the decoded patch file to a temporary file
+-//   const tempPatchFilePath = `${filePath}.patch`
+-//   fs.writeFileSync(tempPatchFilePath, buffer)
+-//
+-//   // Apply the patch using the patch command
+-//   exec(
+-//     `patch ${filePath} ${tempPatchFilePath}`,
+-//     (error, stdout, stderr) => {
+-//       if (error) {
+-//         const fileContents = fs.readFileSync(filePath, 'utf-8')
+-//         const patchContents = fs.readFileSync(
+-//           tempPatchFilePath,
+-//           'utf-8',
+-//         )
+-//
+-//         logger.error(`Error applying patch: ${stderr}`, {
+-//           fileContents,
+-//           patchContents,
+-//         })
+-//         return res.status(500).json({
+-//           error: 'Failed to apply patch',
+-//           stderr,
+-//           fileContents,
+-//           patchContents,
+-//         })
+-//       }
+-//
+-//       // Clean up the temporary patch file
+-//       fs.unlinkSync(tempPatchFilePath)
+-//
+-//       logger.info(`File patched successfully at ${filePath}`, {
+-//         stdout,
+-//       })
+-//       res.json({
+-//         message: `File patched successfully at ${filePath}`,
+-//       })
+-//     },
+-//   )
+-// })
+-const port = 3000
+-
+ const getPersistentSnapshot = (userId: string) => {
+   const snapshotPath = `sessions/${userId}`
+   if (fs.existsSync(snapshotPath)) {
+@@ -165,31 +111,6 @@ const getActorPayload = (
+   const combinedHintsForGpt =
+     header + topLevelMeta + divider + stateMeta
+
+-  //   const diffHintsForGpt = `
+-  // Definitions
+-  //
+-  // High-Level Edit: A high-level edit refers to the replacement or modification of a substantial block of code, larger than a single line but smaller than an entire module or class. This typically includes the contents of a single function, method, or a specific test case within a test suite.
+-  //
+-  // Guidelines for Creating Diffs
+-  //
+-  // 1.Unified Diff Format: Use unified diffs for code changes, similar to the output of diff -U0. Include the first two lines with file paths but exclude timestamps and line numbers.
+-  // 2.Patch Application: Ensure patches apply cleanly against the current contents of the file. Think carefully and mark all lines that need removal or changes with -, and all new or modified lines with +.
+-  // 3.Indentation: Maintain correct indentation in diffs. Indentation errors can prevent the patch from applying correctly.
+-  // 4.Hunk Creation: Create a new hunk for each file section that needs changes. Only output hunks that specify changes (+ or - lines), and skip entirely unchanging ( ) lines.
+-  // 5.High-Level Edits: Encourage high-level edits by replacing entire code blocks (e.g., functions, methods) rather than making minimal line-by-line changes. For instance, if a function changes significantly, replace the entire function block instead of individual lines within it.
+-  // 6.File Movements: Use two hunks to move code within a file: one to delete it from its current location and another to insert it in the new location.
+-  // 7.New Files: To create a new file, show a diff from --- /dev/null to +++ path/to/new/file.ext.
+-  // 8.Error Handling: Handle potential errors such as non-matching lines and non-unique matches by providing additional context or correcting the diff format. Ensure the diff applies cleanly and correctly to the file.
+-  // 9.Contextual Diff Thresholds: Determine the extent of changes required for high-level edits:
+-  // •Replace entire functions if more than a few lines within the function are modified.
+-  // •Use high-level edits for significant logic changes or when adding substantial new functionality.
+-  // 10.Handling Modifications in Nested Blocks: When dealing with nested blocks:
+-  // •Target specific blocks for replacement, such as individual functions or test cases within a module.
+-  // •Avoid replacing entire modules or large blocks unnecessarily. Focus on the smallest logical unit that encompasses the changes.
+-  // 11.Detailed Patch File Requirements: Ensure the patch files adhere to the following format:
+-  // •Use relative file paths from the project root.
+-  // •Maintain consistent formatting and indentation throughout the patch to match the original file.  `
+-
+   return {
+     state,
+     context,
+@@ -335,10 +256,6 @@ app.post('/run-command', async (req, res) => {
+           .json({ error: stderr, output: stdout, err })
+       }
+
+-      // logger.info(
+-      //   'Command executed and changes committed successfully',
+-      //   { stdout, stderr },
+-      // )
+       res.json({
+         message:
+           'Command executed and changes committed successfully',
+@@ -349,128 +266,12 @@ app.post('/run-command', async (req, res) => {
+   )
+ })
+
+-// app.post('/files', async (req, res) => {
+-//   const { files } = req.body
+-//   logger.info('Received /files request', { files })
+-//
+-//   if (!files || !Array.isArray(files)) {
+-//     logger.error('Files are required and must be an array')
+-//     return res
+-//       .status(400)
+-//       .json({ error: 'Files are required and must be an array' })
+-//   }
+-//
+-//   files.forEach((file) => {
+-//     const { path, content } = file
+-//     if (!path || !content) {
+-//       logger.error('Each file must have a path and content')
+-//       return res
+-//         .status(400)
+-//         .json({ error: 'Each file must have a path and content' })
+-//     }
+-//
+-//     fs.writeFileSync(path, content, 'utf8')
+-//     logger.info(`File written: ${path}`)
+-//   })
+-//
+-//   res.json({
+-//     message: 'Files written successfully',
+-//   })
+-// })
+-
+-// app.post('/files', async (req, res) => {
+-//   const openaiFileIdRefs = req.body.openaiFileIdRefs
+-//
+-//   logger.info('Received /files request', { openaiFileIdRefs })
+-//
+-//   if (!openaiFileIdRefs || !Array.isArray(openaiFileIdRefs)) {
+-//     logger.error('openaiFileIdRefs are required and must be an array')
+-//     return res.status(400).json({
+-//       error: 'openaiFileIdRefs are required and must be an array',
+-//     })
+-//   }
+-//
+-//   if (openaiFileIdRefs.length === 0) {
+-//     logger.error('openaiFileIdRefs array is empty')
+-//     return res.status(400).json({
+-//       error: 'openaiFileIdRefs array is empty',
+-//     })
+-//   }
+-//
+-//   try {
+-//     for (const file of openaiFileIdRefs) {
+-//       const { name, id, mime_type, download_link } = file
+-//
+-//       // Download the file content from the URL if download_link is provided
+-//       if (download_link) {
+-//         const response = await axios.get(download_link, {
+-//           responseType: 'arraybuffer',
+-//         })
+-//         fs.writeFileSync(name, response.data)
+-//         logger.info(`File downloaded and written: ${name}`)
+-//       } else {
+-//         // Write the content directly to the specified name
+-//         fs.writeFileSync(name, file.content)
+-//         logger.info(`File written: ${name}`)
+-//       }
+-//     }
+-//     res.json({ message: 'Files written successfully' })
+-//     logger.info('Files written successfully')
+-//   } catch (error) {
+-//     logger.error('Error writing files', { error })
+-//     res.status(500).json({ error })
+-//   }
+-// })
+-
+-// app.post('/createWidget', async (req, res) => {
+-//   const openaiFileIdRefs = req.body.openaiFileIdRefs
+-//
+-//   logger.info('Received /createWidget request', { openaiFileIdRefs })
+-//
+-//   if (!openaiFileIdRefs || !Array.isArray(openaiFileIdRefs)) {
+-//     logger.error('openaiFileIdRefs are required and must be an array')
+-//     return res.status(400).json({
+-//       error: 'openaiFileIdRefs are required and must be an array',
+-//     })
+-//   }
+-//
+-//   if (openaiFileIdRefs.length === 0) {
+-//     logger.error('openaiFileIdRefs array is empty')
+-//     return res.status(400).json({
+-//       error: 'openaiFileIdRefs array is empty',
+-//     })
+-//   }
+-//
+-//   // try {
+-//   //   for (const file of openaiFileIdRefs) {
+-//   //     const { path, name, id, mime_type, download_link } = file
+-//   //
+-//   //     // Download the file content from the URL if download_link is provided
+-//   //     if (download_link) {
+-//   //       const response = await axios.get(download_link, {
+-//   //         responseType: 'arraybuffer',
+-//   //       })
+-//   //       fs.writeFileSync(path, response.data)
+-//   //       logger.info(`File downloaded and written: ${path}`)
+-//   //     } else {
+-//   //       // Write the content directly to the specified path
+-//   //       fs.writeFileSync(path, file.content)
+-//   //       logger.info(`File written: ${path}`)
+-//   //     }
+-//   //   }
+-//   //   res.json({ message: 'Files written successfully' })
+-//   //   logger.info('Files written successfully')
+-//   // } catch (error) {
+-//   //   logger.error('Error writing files', { error })
+-//   //   res.status(500).json({ error })
+-//   // }
+-// })
+-
+ app.get('/', (req, res) => {
+   logger.info('Hello, World! endpoint was called')
+   res.send('Hello, World!')
+ })
+
++const port = 3000
+ app.listen(port, () => {
+   logger.info('Server is running on port ' + port)
+ })
