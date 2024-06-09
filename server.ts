@@ -182,6 +182,7 @@ app.post('/machineSend', (req, res) => {
 })
 
 app.post('/run-command', async (req, res) => {
+  logger.info('Log message added below line 184.')
   const { command, commitMessage } = req.body
   logger.info('Received /run-command request', {
     command,
