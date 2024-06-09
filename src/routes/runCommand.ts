@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import { envParsedWithTypes } from '../../ENV/env.config.ts'
 
 export const runCommandHandler = (req: Request, res: Response) => {
-  const { command, commitMessage } = req.body
+  const { command, commitMessage, isMutative } = req.body
   logger.info('Received /run-command request', {
     command,
     commitMessage,
@@ -63,12 +63,21 @@ export const runCommandHandler = (req: Request, res: Response) => {
             })
           }
 
-          res.json({
-            message: 'Command executed and git diff returned',
-            output: diffStdout,
-            error: diffStderr,
-            err: diffErr,
-          })
+          if (isMutative) {
+            res.json({
+              message: 'Command executed and git diff returned',
+              output: diffStdout,
+              error: diffStderr,
+              err: diffErr,
+            })
+          } else {
+            res.json({
+              message: 'Command executed',
+              output: stdout,
+              error: stderr,
+              err: err,
+            })
+          }
         },
       )
     },

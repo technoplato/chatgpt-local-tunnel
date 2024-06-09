@@ -38,7 +38,6 @@ PAY CLOSE ATTENTION TO THE HINTS THAT ARE BELOW
 IGNORE EVERYTHING ELSE ABOVE THIS LINE
 ================================================================================
   `
-
   const header = `
     \n---------------------------------------------------------\n
     Hints for this entire process:
