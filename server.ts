@@ -210,23 +210,42 @@ app.post('/run-command', async (req, res) => {
     command,
     { cwd: envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION },
     (err, stdout, stderr) => {
-      if (stderr) {
-        logger.error('Command execution error', {
-          stderr,
-          stdout,
-          err,
-        })
-        return res
-          .status(500)
-          .json({ error: stderr, output: stdout, err })
-      }
+      // if (stderr) {
+      //   logger.error('Command execution error', {
+      //     stderr,
+      //     stdout,
+      //     err,
+      //   })
+      // }
 
-      res.json({
-        message:
-          'Command executed and changes committed successfully',
-        output: stdout,
-        error: stderr,
-      })
+      exec(
+        'git diff',
+        { cwd: envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION },
+        (diffErr, diffStdout, diffStderr) => {
+          if (diffStderr) {
+            logger.error('Git diff error', {
+              diffStderr,
+              diffStdout,
+              diffErr,
+            })
+            return res.status(500).json({
+              error: diffStderr,
+              output: diffStdout,
+              err: diffErr,
+            })
+          }
+
+          res.json({
+            message:
+              'Command executed, please observe output to determine success',
+            output: stdout,
+            gitDiff: diffStdout,
+            stderr,
+            error,
+            err,
+          })
+        },
+      )
     },
   )
 })
