@@ -241,7 +241,6 @@ app.post('/run-command', async (req, res) => {
             output: stdout,
             gitDiff: diffStdout,
             stderr,
-            error,
             err,
           })
         },
