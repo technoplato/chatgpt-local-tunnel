@@ -4,6 +4,7 @@ services:
   server:
     build:
       context: .
+      dockerfile: src/Dockerfile
       args:
         - GIT_USER_NAME=${GIT_USER_NAME}
         - GIT_USER_EMAIL=${GIT_USER_EMAIL}
@@ -14,7 +15,7 @@ services:
       - .:/usr/src/app
     ports:
       - "3000:3000"
-    command: bun run --hot /usr/src/app/server.ts
+    command: bun run --hot /usr/src/app/src/server.ts
 
 
   ngrok:

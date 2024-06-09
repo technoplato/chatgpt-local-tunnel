@@ -1,9 +1,9 @@
 import type { Request, Response } from 'express'
 import { createActor } from 'xstate'
-import { gptCoordinatorMachine } from '../gptCoordinator/gptCoordinatorMachine.ts'
 import { savePersistentSnapshot } from '../utils/snapshotUtils.ts'
 import { logger } from '../logging.ts'
 import { getActorPayload } from '../utils/actorUtils.ts'
+import { gptCoordinatorMachine } from '../gptCoordinator/gptCoordinatorMachine.ts'
 
 export const machineStateHandler = (req: Request, res: Response) => {
   const userId = req.userId as string

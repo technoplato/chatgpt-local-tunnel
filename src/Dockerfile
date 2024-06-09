@@ -32,5 +32,5 @@ RUN if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
 EXPOSE 3000
 
 # Run the application with Bun for hot reloading
-CMD ["bun", "run", "--hot", "server.ts"]
+CMD ["bun", "run", "--hot", "src/server.ts"]
 

@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
 import { exec } from 'child_process'
 import { logger } from '../logging.ts'
-import { envParsedWithTypes } from '../../ENV/env.config.ts'
 import * as fs from 'fs'
+import { envParsedWithTypes } from '../../ENV/env.config.ts'
 
 export const runCommandHandler = (req: Request, res: Response) => {
   const { command, commitMessage } = req.body
@@ -40,6 +40,11 @@ export const runCommandHandler = (req: Request, res: Response) => {
           err,
         })
       }
+
+      logger.info('Command execution complete', {
+        stdout,
+        stderr,
+      })
 
       exec(
         'git diff',

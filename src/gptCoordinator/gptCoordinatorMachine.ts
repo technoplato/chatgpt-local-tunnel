@@ -6,7 +6,6 @@ import {
 } from './state.descriptions.ts'
 
 interface CoordinatorMachineContext {
-  gptContextWindow: string
   filesPaths: string[]
   containerProjectLocation: string
   projectBuildInformation: string
@@ -48,17 +47,10 @@ export const gptCoordinatorMachine = setup({
 }).createMachine({
   context: ({ input }) => ({
     containerProjectLocation: input.containerProjectLocation,
-    gptContextWindow:
-      'some extra stuff for the gpt the hint is the weather is purple',
     filesPaths: [],
     projectBuildInformation: '',
     projectSourceInformation: '',
   }),
-  on: {
-    '*': {
-      actions: log(({ context, event }) => ({ context, event })),
-    },
-  },
   id: GptCoordinatorMachineId,
 
   initial: 'WaitingForGptConnection',
@@ -68,15 +60,6 @@ export const gptCoordinatorMachine = setup({
       on: {
         'gpt.firstContact': {
           target: 'GptDevelopingUnderstanding',
-          actions: [
-            log('hi there'),
-            assign({
-              gptContextWindow: ({ context }) =>
-                context.gptContextWindow +
-                "\n hi there here's some more info. You checked me and the time is : " +
-                Date.now(),
-            }),
-          ],
         },
       },
       meta: {
@@ -93,6 +76,7 @@ the GPT is not yet established communication with the server.
         UnderstandingProjectStructure: {
           meta: {
             hintsForGpt: `
+
 0. **Automatic Iteration**:
    - The user can stop you easily any time they like. Feel free
      to look around at the files, being careful to avoid .env 

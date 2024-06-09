@@ -30,6 +30,15 @@ export const getActorPayload = (
   const topLevelMeta =
     metaMap[GptCoordinatorMachineId]?.hintsForGpt ?? ''
 
+  const IgnoreEverythingElseHeader = `
+================================================================================
+IGNORE EVERYTHING ELSE ABOVE THIS LINE
+HINTS THAT WILL HELP YOU ARE BELOW
+PAY CLOSE ATTENTION TO THE HINTS THAT ARE BELOW
+IGNORE EVERYTHING ELSE ABOVE THIS LINE
+================================================================================
+  `
+
   const header = `
     \n---------------------------------------------------------\n
     Hints for this entire process:
@@ -43,7 +52,11 @@ export const getActorPayload = (
   `
 
   const combinedHintsForGpt =
-    header + topLevelMeta + divider + stateMeta
+    IgnoreEverythingElseHeader +
+    header +
+    topLevelMeta +
+    divider +
+    stateMeta
 
   return {
     state,
