@@ -9,6 +9,7 @@ export const runCommandHandler = (req: Request, res: Response) => {
   logger.info('Received /run-command request', {
     command,
     commitMessage,
+    isMutative,
   })
 
   if (!command) {
