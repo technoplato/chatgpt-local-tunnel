@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { machineStateHandler } from './routes/machineState';
 import { machineSendHandler } from './routes/machineSend';
 import { runCommandHandler } from './routes/runCommand';
+import { checkUserAndRestoreState } from './middlewares/checkUserAndRestoreState';
 import { logger } from './logging';
 
 dotenv.config();
@@ -10,6 +11,8 @@ logger.info('Server started and logger initialized.');
 
 const app = express();
 app.use(express.json());
+
+app.use(checkUserAndRestoreState);
 
 app.get('/machineState', machineStateHandler);
 app.post('/machineSend', machineSendHandler);

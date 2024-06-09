@@ -1,19 +1,13 @@
 import type { Request, Response } from 'express'
 import { createActor } from 'xstate'
 import { gptCoordinatorMachine } from '../src/gptCoordinator/gptCoordinatorMachine'
-import {
-  getPersistentSnapshot,
-  savePersistentSnapshot,
-} from '../utils/snapshotUtils'
+import { savePersistentSnapshot } from '../utils/snapshotUtils'
 import { logger } from '../logging'
 import { getActorPayload } from '../utils/actorUtils.ts'
 
 export const machineStateHandler = (req: Request, res: Response) => {
-  const userId = req.headers['openai-ephemeral-user-id'] as string
-  if (!userId) {
-    logger.warn('No user ID provided in request headers')
-    return res.status(400).json({ error: 'User ID is required' })
-  }
+  const userId = req.userId as string
+  const restoredState = req.restoredState
 
   logger.info('Received /machineState request', {
     method: req.method,
@@ -23,7 +17,6 @@ export const machineStateHandler = (req: Request, res: Response) => {
     body: req.body,
   })
 
-  const restoredState = getPersistentSnapshot(userId)
   const actor = createActor(gptCoordinatorMachine, {
     input: {
       containerProjectLocation:
