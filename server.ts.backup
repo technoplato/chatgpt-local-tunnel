@@ -236,29 +236,7 @@ app.get('/', (req, res) => {
   res.send('Hello, World!')
 })
 
-
-interface OpenAIFileIdRef {
-  name: string;
-  id: string;
-  mime_type: string;
-  download_link: string;
-}
-
-app.post('/postFiles', (req: Request, res: Response) => {
-  const files: OpenAIFileIdRef[] = req.body.openaiFileIdRefs;
-
-  if (!files || files.length < 1 || files.length > 10) {
-    return res.status(400).json({ error: 'Number of files must be between 1 and 10' });
-  }
-
-  for (const file of files) {
-    if (file.mime_type !== 'text/plain') {
-      return res.status(400).json({ error: `Invalid file type: ${file.mime_type}` });
-    }
-  }
-
-  // Process the files as needed, assuming files are uploaded to the user's project.
-  return res.status(200).json({ message: 'Files uploaded successfully' });
-});
-
+const port = 3000
+app.listen(port, () => {
+  logger.info('Server is running on port ' + port)
 })
