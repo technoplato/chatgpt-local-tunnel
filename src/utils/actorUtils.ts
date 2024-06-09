@@ -2,9 +2,9 @@ import type { ActorRefFrom } from 'xstate'
 import {
   gptCoordinatorMachine,
   GptCoordinatorMachineId,
-} from '../src/gptCoordinator/gptCoordinatorMachine'
+} from '../gptCoordinator/gptCoordinatorMachine.ts'
 import { __unsafe_getAllOwnEventDescriptors } from 'xstate'
-import { logger } from '../logging'
+import { logger } from '../logging.ts'
 
 export const getActorPayload = (
   actor: ActorRefFrom<typeof gptCoordinatorMachine>,

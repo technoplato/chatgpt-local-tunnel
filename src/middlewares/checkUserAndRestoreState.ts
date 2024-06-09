@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
-import { getPersistentSnapshot } from '../utils/snapshotUtils'
-import { logger } from '../logging'
+import { getPersistentSnapshot } from '../utils/snapshotUtils.ts'
+import { logger } from '../logging.ts'
 
 export const checkUserAndRestoreState = (
   req: Request,

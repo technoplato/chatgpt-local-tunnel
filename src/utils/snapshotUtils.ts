@@ -13,6 +13,6 @@ export const savePersistentSnapshot = (
   userId: string,
   snapshot: any,
 ) => {
-  const snapshotPath = `sessions/${userId}`
+  const snapshotPath = `../sessions/${userId}`
   fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8')
 }

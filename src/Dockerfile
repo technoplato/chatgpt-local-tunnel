@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y patch git
 WORKDIR /usr/src/app
 
 # Copy package.json and bun.lockb
-COPY package.json bun.lockb ./
+COPY ../package.json bun.lockb ./
 
 # Install dependencies
 RUN bun install

@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
 import { createActor } from 'xstate'
-import { gptCoordinatorMachine } from '../src/gptCoordinator/gptCoordinatorMachine'
-import { savePersistentSnapshot } from '../utils/snapshotUtils'
-import { logger } from '../logging'
+import { gptCoordinatorMachine } from '../gptCoordinator/gptCoordinatorMachine.ts'
+import { savePersistentSnapshot } from '../utils/snapshotUtils.ts'
+import { logger } from '../logging.ts'
 import { getActorPayload } from '../utils/actorUtils.ts'
 
 export const machineStateHandler = (req: Request, res: Response) => {
