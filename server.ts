@@ -242,3 +242,8 @@ interface OpenAIFileIdRef {
   mime_type: string
   download_link: string
 }
+
+const port = 3000
+app.listen(port, () => {
+  logger.info('Server is running on port ' + port)
+})
