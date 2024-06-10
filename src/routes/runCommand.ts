@@ -67,9 +67,11 @@ export const runCommandHandler = (req: Request, res: Response) => {
           if (isMutative) {
             res.json({
               message: 'Command executed and git diff returned',
-              output: diffStdout,
-              error: diffStderr,
-              err: diffErr,
+              output: stdout,
+              err: stderr,
+              diffStdout,
+              diffStderr,
+              diffErr,
             })
           } else {
             res.json({
