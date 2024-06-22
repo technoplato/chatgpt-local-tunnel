@@ -6,7 +6,7 @@ import {
 } from '../utils/snapshotUtils.ts'
 import { getActorPayload } from '../utils/actorUtils.ts'
 import { logger } from '../logging.ts'
-import { gptCoordinatorMachine } from '../gptCoordinator/gptCoordinatorMachine.ts'
+import { coordinatorMachine } from '../gptCoordinator/coordinator.machine.ts'
 
 export const machineSendHandler = (req: Request, res: Response) => {
   const userId = req.userId as string
@@ -18,7 +18,7 @@ export const machineSendHandler = (req: Request, res: Response) => {
   }
   logger.info('Received command for machineSend', { command })
 
-  const actor = createActor(gptCoordinatorMachine, {
+  const actor = createActor(coordinatorMachine, {
     input: {
       containerProjectLocation:
         process.env.USER_PROJECT_CONTAINER_LOCATION,

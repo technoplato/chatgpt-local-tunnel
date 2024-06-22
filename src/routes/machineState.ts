@@ -3,7 +3,7 @@ import { createActor } from 'xstate'
 import { savePersistentSnapshot } from '../utils/snapshotUtils.ts'
 import { logger } from '../logging.ts'
 import { getActorPayload } from '../utils/actorUtils.ts'
-import { gptCoordinatorMachine } from '../gptCoordinator/gptCoordinatorMachine.ts'
+import { coordinatorMachine } from '../gptCoordinator/coordinator.machine.ts'
 
 export const machineStateHandler = (req: Request, res: Response) => {
   const userId = req.userId as string
@@ -17,7 +17,7 @@ export const machineStateHandler = (req: Request, res: Response) => {
     body: req.body,
   })
 
-  const actor = createActor(gptCoordinatorMachine, {
+  const actor = createActor(coordinatorMachine, {
     input: {
       containerProjectLocation:
         process.env.USER_PROJECT_CONTAINER_LOCATION,

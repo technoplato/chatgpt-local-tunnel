@@ -6,9 +6,9 @@ import {
 } from 'xstate'
 import { logger } from '../logging.ts'
 import {
-  gptCoordinatorMachine,
+  coordinatorMachine,
   GptCoordinatorMachineId,
-} from '../gptCoordinator/gptCoordinatorMachine.ts'
+} from '../gptCoordinator/coordinator.machine.ts'
 
 export const getPersistentSnapshot = (userId: string) => {
   const snapshotPath = `sessions/${userId}`

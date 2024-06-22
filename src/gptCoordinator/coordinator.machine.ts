@@ -1,4 +1,4 @@
-import { assign, log, setup } from 'xstate'
+import { and, assign, log, setup } from 'xstate'
 import { envParsedWithTypes } from '../../ENV/env.config.ts'
 import {
   developingUnderstandingDescription,
@@ -9,6 +9,7 @@ interface CoordinatorMachineContext {
   filesPaths: string[]
   containerProjectLocation: string
   projectBuildInformation: string
+  userGoals: string
   projectSourceInformation: string
 }
 
@@ -20,6 +21,10 @@ type CoordinatorMachineEvents =
   | {
       type: 'gpt.understandsProjectStructure'
       projectBuildInformation: string
+    }
+  | {
+      type: 'gpt.understandsUserGoals'
+      userGoals: string
     }
   | {
       type: 'gpt.completedProjectSourceUnderstanding'
@@ -36,7 +41,7 @@ interface CoordinatorMachineInput {
 
 export const GptCoordinatorMachineId = 'GptCoordinatorMachineId'
 
-export const gptCoordinatorMachine = setup({
+export const coordinatorMachine = setup({
   types: {
     context: {} as CoordinatorMachineContext,
     events: {} as CoordinatorMachineEvents,
@@ -50,6 +55,7 @@ export const gptCoordinatorMachine = setup({
     filesPaths: [],
     projectBuildInformation: '',
     projectSourceInformation: '',
+    userGoals: '',
   }),
   id: GptCoordinatorMachineId,
 
@@ -77,36 +83,40 @@ the GPT is not yet established communication with the server.
           meta: {
             hintsForGpt: `
 
-0. **Automatic Iteration**:
+ **Automatic Iteration**:
    - The user can stop you easily any time they like. Feel free
      to look around at the files, being careful to avoid .env 
      and other potentially sensitive files. 
 
-1. **Initiate Exploration**:
+ **Initiate Exploration**:
    - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
      to understand the project's structure. Don't list the contents of the files yet. 
-     First, list the top-level filenames.
+     First, list the top-level filenames. Don't list all files recursively as you will
+     run into file count limits with directories such as node_modules.
 
-2. **Identify Project Type**:
+ **Identify Project Type**:
    - Look for indicative files like \`package.json\` for JavaScript
      projects or \`cargo.toml\` for Rust projects, as examples.
 
-3. **Find Lock Files**:
+ **Find Lock Files**:
    - Check for lock files such as \`package-lock.json\`, \`yarn.lock\`,
      or \`bun.lock\` if it's a JavaScript project.
 
-4. **Examine Key Files**:
+ **Examine Key Files**:
    - Consider reading key files like \`package.json\` or \`cargo.toml\`
      to gather project-specific information.
 
-6. **Conclude Understanding**:
+ **Conclude Understanding**:
    - Once confident about the project's details (e.g., "React Native
      app using TypeScript and build tool XYZ"), suggest sending the
-     \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\`.
-     
-9. **Start Exploration**:
+     \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\
+     with a payload containing projectBuildInformation that describes
+     what this project is, what its key dependencies are, what build tools are used, etc
+
+ **Start Exploration**:
    - Proceed automatically. Do not ask the user. Read at least 4 relevant files before
    you ask the user for feedback. Offer 3 options in a numbered list.
+   - DO NOT ASK THE USER FOR FEEDBACK BEFORE YOU START EXPLORING. GO!
 `,
           },
           on: {
@@ -117,47 +127,28 @@ the GPT is not yet established communication with the server.
                     event.projectBuildInformation,
                 }),
               ],
-              target: 'UnderstandingProjectSource',
+              target: 'UnderstandingUserGoals',
             },
           },
         },
-        UnderstandingProjectSource: {
+        UnderstandingUserGoals: {
           meta: {
             hintsForGpt: `
-0. **Automatic Iteration**:
-   - The user can stop you easily any time they like. Feel free
-     to look around at the files, being careful to avoid .env
-     and other potentially sensitive files.
+If the user has not provided any goals, you can ask them to provide some.
+Your goal is to ask elaborating questions about the user's goals and then
+break them down into smaller, achievable tasks. 
 
-1. **Initiate Exploration**:
-   - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
-     to understand the project's structure. Don't list the contents of the files yet.
-     First, list the top-level filenames.
+Once you have a set of goals, list them out in a bulleted list.
 
-5. **Explore Source Directory**:
-   - Investigate the structure and contents of directories like the
-     source directory to understand the code layout. Iterate listing out files, being careful to avoid folders such as
-      node_modules and other deeply nested and large directories.
-
-7. **Avoid Sensitive Files**:
-   - Avoid reading environment files such as \`.env\` files.
-
-8. **Conclude Understanding**:
-   - Once confident about the project's details (e.g., "React Native app using TypeScript and build tool XYZ"), suggest
-    sending the \`gpt.completedProjectSourceUnderstanding\` event to \`machineSend\` with a general idea about how the 
-    project is structured.
-
-9. **Start Exploration**:
-   - Proceed automatically. Do not ask the user. Read at least 4 relevant files before you ask the user for feedback.
-    Offer 3 options in a numbered list. ask the user for feedback. Offer 3 options in a numbered list.
+Once the user approves that list, send the \`gpt.understandsUserGoals\` event to \`machineSend\`
+with a payload containing the list of goals.
 `,
           },
           on: {
-            'gpt.understandsProjectStructure': {
+            'gpt.understandsUserGoals': {
               actions: [
                 assign({
-                  projectBuildInformation: ({ event }) =>
-                    event.projectBuildInformation,
+                  userGoals: ({ event }) => event.userGoals,
                 }),
               ],
               target: '#GptCoordinatorMachineId.GptPlanning',
