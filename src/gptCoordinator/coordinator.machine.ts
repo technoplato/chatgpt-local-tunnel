@@ -121,7 +121,7 @@ the GPT is not yet established communication with the server.
  **Conclude Understanding**:
    - Once confident about the project's details (e.g., "React Native
      app using TypeScript and build tool XYZ"), suggest sending the
-     \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\
+     \`gpt.understandsProjectStructure\` event to \`machineSend\
      with a payload containing projectBuildInformation that describes
      what this project is, what build tools, what runtimes, what
       its key dependencies are, what build tools are used, etc
