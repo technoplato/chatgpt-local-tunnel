@@ -26,10 +26,10 @@ export const machineStateHandler = (req: Request, res: Response) => {
   }).start()
 
   logger.info(
-    `Machine state before sending command: ${JSON.stringify(actor.getSnapshot())}`,
+    `Machine state before sending command:\n${JSON.stringify(actor.getSnapshot())}`,
   )
   logger.info(
-    `Machine state after /machineState: ${JSON.stringify(actor.getSnapshot())}`,
+    `Machine state after /machineState:\n${JSON.stringify(actor.getSnapshot())}`,
   )
 
   const payload = getActorPayload(actor)

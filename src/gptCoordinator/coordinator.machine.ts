@@ -80,6 +80,18 @@ the GPT is not yet established communication with the server.
       initial: 'UnderstandingProjectStructure',
       states: {
         UnderstandingProjectStructure: {
+          on: {
+            'gpt.understandsProjectStructure': {
+              actions: [
+                assign({
+                  projectBuildInformation: ({ event }) =>
+                    event.projectBuildInformation,
+                }),
+              ],
+              target: 'UnderstandingUserGoals',
+            },
+          },
+
           meta: {
             hintsForGpt: `
 
@@ -111,7 +123,8 @@ the GPT is not yet established communication with the server.
      app using TypeScript and build tool XYZ"), suggest sending the
      \`gpt.completedInitialProjectUnderstanding\` event to \`machineSend\
      with a payload containing projectBuildInformation that describes
-     what this project is, what its key dependencies are, what build tools are used, etc
+     what this project is, what build tools, what runtimes, what
+      its key dependencies are, what build tools are used, etc
 
  **Start Exploration**:
    - Proceed automatically. Do not ask the user. Read at least 4 relevant files before
@@ -119,19 +132,19 @@ the GPT is not yet established communication with the server.
    - DO NOT ASK THE USER FOR FEEDBACK BEFORE YOU START EXPLORING. GO!
 `,
           },
+        },
+
+        UnderstandingUserGoals: {
           on: {
-            'gpt.understandsProjectStructure': {
+            'gpt.understandsUserGoals': {
               actions: [
                 assign({
-                  projectBuildInformation: ({ event }) =>
-                    event.projectBuildInformation,
+                  userGoals: ({ event }) => event.userGoals,
                 }),
               ],
-              target: 'UnderstandingUserGoals',
+              target: '#GptCoordinatorMachineId.GptPlanning',
             },
           },
-        },
-        UnderstandingUserGoals: {
           meta: {
             hintsForGpt: `
 If the user has not provided any goals, you can ask them to provide some.
@@ -143,16 +156,6 @@ Once you have a set of goals, list them out in a bulleted list.
 Once the user approves that list, send the \`gpt.understandsUserGoals\` event to \`machineSend\`
 with a payload containing the list of goals.
 `,
-          },
-          on: {
-            'gpt.understandsUserGoals': {
-              actions: [
-                assign({
-                  userGoals: ({ event }) => event.userGoals,
-                }),
-              ],
-              target: '#GptCoordinatorMachineId.GptPlanning',
-            },
           },
         },
       },
@@ -223,81 +226,81 @@ Example Structure for Plan:
       },
     },
   },
-  meta: {
-    hintsForGpt: `
-Whenever you need to make modifications to the project, 
-you can use the \`encodedPatchFile\` action to send a patch file to the GPT.
-
-The patch file should be a base64 encoded string that contains the changes to the project.
-
-For example, if you want to add a new file to the project, you can use the \`encodedPatchFile\`
- action to send a patch file that adds the new file to the project.
-
-If you want to modify an existing file, you can use the \`encodedPatchFile\` action to 
-send a patch file that modifies the existing file.
-
-Here are explicit instructions of the entire process: 
-
-1. **Identify the Target File and Desired Change:**
-   - Based off user instructions, identify the target file and desired
-     change.
-   - Example: Identified \`foo.txt\` as the target file and desired to add
-     \`11\` after \`10\`.
-
-2. **Simulate the Patch File Creation:**
-   - Craft a minimal patch file to represent the change.
-   - Specify the old file (\`foo.txt\`) and new file (\`foo.txt\`) in the 
-     header.
-   - Include only necessary context around the change.
-
-3. **Simulate the Construction of the Patch File:**
-   - Use the following format:
-     \`\`\`diff
-     --- foo.txt
-     +++ foo.txt
-     @@ -8,3 +8,4 @@
-      8
-      9
-      10
-     +11
-     \`\`\`
-
-4. **Ensure Minimal Context:**
-   - Include only necessary lines surrounding the change.
-
-5. **Encode the Patch File in Base64:**
-   - Encode the patch file in Base64 using your local Python environment:
-     \`\`\`python
-     import base64
-
-     patch_content = """--- foo.txt
-     +++ foo.txt
-     @@ -8,3 +8,4 @@
-      8
-      9
-      10
-     +11
-     """
-     encoded_patch = base64.b64encode(patch_content.encode('utf-8')).decode('utf-8')
-     print(encoded_patch)
-     \`\`\`
-   - The Base64 encoded output should be:
-     \`\`\`
-     LS0tIGZvby50eHQKKysrIGZvby50eHQKQEAgLTgsMyArOCw0IEBACiA4CiA5CiAxMAorMTEK
-     \`\`\`
-
-6. **Invoke the Encoded Patch File Action:**
-   - Invoke the \`encodedPatchFile\` action with the encoded patch file and 
-     the target file path:
-     \`\`\`json
-     {
-       "encodedPatchFile": "LS0tIGZvby50eHQKKysrIGZvby50eHQKQEAgLTgsMyArOCw0IEBACiA4CiA5CiAxMAorMTEK",
-       "filePath": "/usr/src/project/foo.txt"
-     }
-     \`\`\`
-
-7. **Confirm the Patch was Applied:**
-   - Ensure the file is successfully patched.
-`,
-  },
+  //   meta: {
+  //     hintsForGpt: `
+  // Whenever you need to make modifications to the project,
+  // you can use the \`encodedPatchFile\` action to send a patch file to the GPT.
+  //
+  // The patch file should be a base64 encoded string that contains the changes to the project.
+  //
+  // For example, if you want to add a new file to the project, you can use the \`encodedPatchFile\`
+  //  action to send a patch file that adds the new file to the project.
+  //
+  // If you want to modify an existing file, you can use the \`encodedPatchFile\` action to
+  // send a patch file that modifies the existing file.
+  //
+  // Here are explicit instructions of the entire process:
+  //
+  // 1. **Identify the Target File and Desired Change:**
+  //    - Based off user instructions, identify the target files and desired
+  //      changes.
+  //    - Example: Identified \`foo.txt\` as the target file and desired to add
+  //      \`11\` after \`10\`.
+  //
+  // 2. **Simulate the Patch File Creation:**
+  //    - Craft a minimal patch file to represent the change.
+  //    - Specify the old file (\`foo.txt\`) and new file (\`foo.txt\`) in the
+  //      header.
+  //    - Include only necessary context around the change.
+  //
+  // 3. **Simulate the Construction of the Patch File:**
+  //    - Use the following format:
+  //      \`\`\`diff
+  //      --- foo.txt
+  //      +++ foo.txt
+  //      @@ -8,3 +8,4 @@
+  //       8
+  //       9
+  //       10
+  //      +11
+  //      \`\`\`
+  //
+  // 4. **Ensure Minimal Context:**
+  //    - Include only necessary lines surrounding the change.
+  //
+  // 5. **Encode the Patch File in Base64:**
+  //    - Encode the patch file in Base64 using your local Python environment:
+  //      \`\`\`python
+  //      import base64
+  //
+  //      patch_content = """--- foo.txt
+  //      +++ foo.txt
+  //      @@ -8,3 +8,4 @@
+  //       8
+  //       9
+  //       10
+  //      +11
+  //      """
+  //      encoded_patch = base64.b64encode(patch_content.encode('utf-8')).decode('utf-8')
+  //      print(encoded_patch)
+  //      \`\`\`
+  //    - The Base64 encoded output should be:
+  //      \`\`\`
+  //      LS0tIGZvby50eHQKKysrIGZvby50eHQKQEAgLTgsMyArOCw0IEBACiA4CiA5CiAxMAorMTEK
+  //      \`\`\`
+  //
+  // 6. **Invoke the Encoded Patch File Action:**
+  //    - Invoke the \`encodedPatchFile\` action with the encoded patch file and
+  //      the target file path:
+  //      \`\`\`json
+  //      {
+  //        "encodedPatchFile": "LS0tIGZvby50eHQKKysrIGZvby50eHQKQEAgLTgsMyArOCw0IEBACiA4CiA5CiAxMAorMTEK",
+  //        "filePath": "/usr/src/project/foo.txt"
+  //      }
+  //      \`\`\`
+  //
+  // 7. **Confirm the Patch was Applied:**
+  //    - Ensure the file is successfully patched.
+  // `,
+  //   },
 })
