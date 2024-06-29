@@ -493,3 +493,263 @@ volumes:
     })
   })
 })
+
+describe('File Comparison Tests - Partial Matches and Similar Content', () => {
+  test('Rust file with similar but not exact content', () => {
+    const searches = {
+      'src/main.rs': [
+        [
+          `// Main function
+fn main() {
+    let my_map = HashMap::new();
+    my_map.insert("key1", "value1");`,
+        ],
+        [
+          `// Loop through the map
+    for (k, v) in &my_map {
+        println!("{}={}", k, v);`,
+        ],
+      ],
+    }
+
+    const result = compareHunksToFiles(searches, fileSystem)
+    expect(result['src/main.rs']).toEqual({
+      fileName: 'src/main.rs',
+      fileLines: 14,
+      hunks: [
+        {
+          matches: [
+            {
+              hunkLineNum: 1,
+              fileLineNum: 4,
+              content: '// Main function',
+            },
+            {
+              hunkLineNum: 2,
+              fileLineNum: 5,
+              content: 'fn main() {',
+            },
+          ],
+          mismatches: [
+            {
+              hunkLineNum: 3,
+              content: 'let my_map = HashMap::new();',
+            },
+            {
+              hunkLineNum: 4,
+              content: 'my_map.insert("key1", "value1");',
+            },
+          ],
+          hunkLines: 4,
+          matchPercentage: 50,
+          errors: [
+            'Line 3 of hunk not found in src/main.rs: "let my_map = HashMap::new();"',
+            'Line 4 of hunk not found in src/main.rs: "my_map.insert("key1", "value1");"',
+          ],
+        },
+        {
+          matches: [],
+          mismatches: [
+            {
+              hunkLineNum: 1,
+              content: '// Loop through the map',
+            },
+            {
+              hunkLineNum: 2,
+              content: 'for (k, v) in &my_map {',
+            },
+            {
+              hunkLineNum: 3,
+              content: 'println!("{}={}", k, v);',
+            },
+          ],
+          hunkLines: 3,
+          matchPercentage: 0,
+          errors: [
+            'Line 1 of hunk not found in src/main.rs: "// Loop through the map"',
+            'Line 2 of hunk not found in src/main.rs: "for (k, v) in &my_map {"',
+            'Line 3 of hunk not found in src/main.rs: "println!("{}={}", k, v);"',
+          ],
+        },
+      ],
+    })
+  })
+
+  test('TypeScript file with partial matches and similar functions', () => {
+    const searches = {
+      'lib/utils.ts': [
+        [
+          `export function debounce<T extends Function>(
+    func: T,
+    delay: number
+) {
+    let timer: NodeJS.Timeout | null = null;`,
+        ],
+        [
+          `export function capitalize(str: string): string {
+    return str[0].toUpperCase() + str.substring(1);
+}`,
+        ],
+      ],
+    }
+
+    const result = compareHunksToFiles(searches, fileSystem)
+    expect(result['lib/utils.ts']).toEqual({
+      fileName: 'lib/utils.ts',
+      fileLines: 22,
+      hunks: [
+        {
+          matches: [
+            {
+              hunkLineNum: 4,
+              fileLineNum: 8,
+              content: ') {',
+            },
+          ],
+          mismatches: [
+            {
+              hunkLineNum: 1,
+              content:
+                'export function debounce<T extends Function>(',
+            },
+            {
+              hunkLineNum: 2,
+              content: 'func: T,',
+            },
+            {
+              hunkLineNum: 3,
+              content: 'delay: number',
+            },
+            {
+              hunkLineNum: 5,
+              content: 'let timer: NodeJS.Timeout | null = null;',
+            },
+          ],
+          hunkLines: 5,
+          matchPercentage: 20,
+          errors: [
+            'Line 1 of hunk not found in lib/utils.ts: "export function debounce<T extends Function>("',
+            'Line 2 of hunk not found in lib/utils.ts: "func: T,"',
+            'Line 3 of hunk not found in lib/utils.ts: "delay: number"',
+            'Line 5 of hunk not found in lib/utils.ts: "let timer: NodeJS.Timeout | null = null;"',
+          ],
+        },
+        {
+          matches: [
+            {
+              hunkLineNum: 3,
+              fileLineNum: 14,
+              content: '}',
+            },
+          ],
+          mismatches: [
+            {
+              hunkLineNum: 1,
+              content:
+                'export function capitalize(str: string): string {',
+            },
+            {
+              hunkLineNum: 2,
+              content:
+                'return str[0].toUpperCase() + str.substring(1);',
+            },
+          ],
+          hunkLines: 3,
+          matchPercentage: 33.33333333333333,
+          errors: [
+            'Line 1 of hunk not found in lib/utils.ts: "export function capitalize(str: string): string {"',
+            'Line 2 of hunk not found in lib/utils.ts: "return str[0].toUpperCase() + str.substring(1);"',
+          ],
+        },
+      ],
+    })
+  })
+
+  test('JSON file with partial configuration matches', () => {
+    const searches = {
+      'config.json': [
+        [
+          `{
+  "name": "my-awesome-project",
+  "version": "2.0.0",
+  "description": "An awesome project configuration",`,
+        ],
+        [
+          `"devDependencies": {
+    "jest": "^28.0.0",
+    "typescript": "^4.4.0",
+    "eslint": "^8.0.0"
+  }`,
+        ],
+      ],
+    }
+
+    const result = compareHunksToFiles(searches, fileSystem)
+    expect(result['config.json']).toEqual({
+      fileName: 'config.json',
+      fileLines: 19,
+      hunks: [
+        {
+          matches: [{ hunkLineNum: 1, fileLineNum: 1, content: '{' }],
+          mismatches: [
+            {
+              hunkLineNum: 2,
+              content: '"name": "my-awesome-project",',
+            },
+            {
+              hunkLineNum: 3,
+              content: '"version": "2.0.0",',
+            },
+            {
+              hunkLineNum: 4,
+              content:
+                '"description": "An awesome project configuration",',
+            },
+          ],
+          hunkLines: 4,
+          matchPercentage: 25,
+          errors: [
+            'Line 2 of hunk not found in config.json: ""name": "my-awesome-project","',
+            'Line 3 of hunk not found in config.json: ""version": "2.0.0","',
+            'Line 4 of hunk not found in config.json: ""description": "An awesome project configuration","',
+          ],
+        },
+        {
+          matches: [
+            {
+              hunkLineNum: 1,
+              fileLineNum: 14,
+              content: '"devDependencies": {',
+            },
+            {
+              hunkLineNum: 5,
+              fileLineNum: 17,
+              content: '}',
+            },
+          ],
+          mismatches: [
+            {
+              hunkLineNum: 2,
+              content: '"jest": "^28.0.0",',
+            },
+            {
+              hunkLineNum: 3,
+              content: '"typescript": "^4.4.0",',
+            },
+            {
+              hunkLineNum: 4,
+              content: '"eslint": "^8.0.0"',
+            },
+          ],
+          hunkLines: 5,
+          matchPercentage: 40,
+          errors: [
+            'Line 2 of hunk not found in config.json: ""jest": "^28.0.0","',
+            'Line 3 of hunk not found in config.json: ""typescript": "^4.4.0","',
+            'Line 4 of hunk not found in config.json: ""eslint": "^8.0.0""',
+          ],
+        },
+      ],
+    })
+  })
+})
