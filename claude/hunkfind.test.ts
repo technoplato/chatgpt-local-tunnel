@@ -109,7 +109,6 @@ function compareHunksToFiles(
 function readTestFiles(testDir: string): FileSystem {
   const fileSystem: FileSystem = {}
   const files = fs.readdirSync(testDir)
-  console.log('flies', { files })
 
   files.forEach((file) => {
     const filePath = path.join(testDir, file)
@@ -153,17 +152,17 @@ fn main() {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 4,
+              fileLineNum: 3,
               content: '// Main function',
             },
             {
               hunkLineNum: 2,
-              fileLineNum: 5,
+              fileLineNum: 4,
               content: 'fn main() {',
             },
             {
               hunkLineNum: 3,
-              fileLineNum: 6,
+              fileLineNum: 5,
               content: 'let mut map = HashMap::new();',
             },
           ],
@@ -176,17 +175,17 @@ fn main() {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 10,
+              fileLineNum: 9,
               content: '// Iterate over the map',
             },
             {
               hunkLineNum: 2,
-              fileLineNum: 11,
+              fileLineNum: 10,
               content: 'for (key, value) in &map {',
             },
             {
               hunkLineNum: 3,
-              fileLineNum: 12,
+              fileLineNum: 11,
               content: 'println!("{}: {}", key, value);',
             },
           ],
