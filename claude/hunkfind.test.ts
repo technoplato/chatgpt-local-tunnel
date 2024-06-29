@@ -158,7 +158,8 @@ export function capitalizeString(str: string): string {
     "jest": "^27.0.6",
     "typescript": "^4.3.5"
   }
-}`,
+}
+`,
   'docker-compose.yml': `
 version: '3'
 services:
@@ -173,11 +174,12 @@ services:
     environment:
       POSTGRES_PASSWORD: example
 volumes:
-  db-data:`,
+  db-data:
+`,
 }
 
 // Tests
-describe.only('File Comparison Tests', () => {
+describe('File Comparison Tests', () => {
   test('Rust file with comments', () => {
     const searches = {
       'src/main.rs': [
@@ -303,17 +305,17 @@ fn main() {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 19,
+              fileLineNum: 20,
               content:
                 'export function capitalizeString(str: string): string {',
             },
             {
               hunkLineNum: 2,
-              fileLineNum: 20,
+              fileLineNum: 21,
               content:
                 'return str.charAt(0).toUpperCase() + str.slice(1);',
             },
-            { hunkLineNum: 3, fileLineNum: 21, content: '}' },
+            { hunkLineNum: 3, fileLineNum: 14, content: '}' },
           ],
           mismatches: [],
           hunkLines: 3,
@@ -345,7 +347,7 @@ fn main() {
     const result = compareHunksToFiles(searches, fileSystem)
     expect(result['config.json']).toEqual({
       fileName: 'config.json',
-      fileLines: 17,
+      fileLines: 19,
       hunks: [
         {
           matches: [
@@ -425,7 +427,7 @@ volumes:
     const result = compareHunksToFiles(searches, fileSystem)
     expect(result['docker-compose.yml']).toEqual({
       fileName: 'docker-compose.yml',
-      fileLines: 14,
+      fileLines: 16,
       hunks: [
         {
           matches: [
@@ -451,24 +453,24 @@ volumes:
         },
         {
           matches: [
-            { hunkLineNum: 1, fileLineNum: 9, content: 'db:' },
+            { hunkLineNum: 1, fileLineNum: 10, content: 'db:' },
             {
               hunkLineNum: 2,
-              fileLineNum: 10,
+              fileLineNum: 11,
               content: 'image: "postgres:13"',
             },
             {
               hunkLineNum: 3,
-              fileLineNum: 11,
+              fileLineNum: 12,
               content: 'environment:',
             },
             {
               hunkLineNum: 4,
-              fileLineNum: 12,
+              fileLineNum: 13,
               content: 'POSTGRES_PASSWORD: example',
             },
-            { hunkLineNum: 5, fileLineNum: 13, content: 'volumes:' },
-            { hunkLineNum: 6, fileLineNum: 14, content: 'db-data:' },
+            { hunkLineNum: 5, fileLineNum: 14, content: 'volumes:' },
+            { hunkLineNum: 6, fileLineNum: 15, content: 'db-data:' },
           ],
           mismatches: [],
           hunkLines: 6,
