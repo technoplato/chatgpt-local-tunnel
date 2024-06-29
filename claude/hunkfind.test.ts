@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import * as fs from 'fs'
+import * as path from 'path'
 
 // Type definitions
 type FileSystem = { [key: string]: string }
@@ -103,86 +105,32 @@ function compareHunksToFiles(
   return results
 }
 
-// Virtual file system for testing
-const fileSystem: FileSystem = {
-  'src/main.rs': `
-use std::collections::HashMap;
+// Function to read files from the test directory
+function readTestFiles(testDir: string): FileSystem {
+  const fileSystem: FileSystem = {}
+  const files = fs.readdirSync(testDir)
+  console.log('flies', { files })
 
-// Main function
-fn main() {
-    let mut map = HashMap::new();
-    map.insert("key1", "value1");
-    map.insert("key2", "value2");
-
-    // Iterate over the map
-    for (key, value) in &map {
-        println!("{}: {}", key, value);
+  files.forEach((file) => {
+    const filePath = path.join(testDir, file)
+    if (fs.statSync(filePath).isFile()) {
+      fileSystem[file] = fs.readFileSync(filePath, 'utf-8')
     }
-}`,
-  'lib/utils.ts': `
-/**
- * Debounce function
- */
-export function debounce<F extends (...args: any[]) => any>(
-    func: F,
-    waitFor: number
-) {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+  })
 
-    return (...args: Parameters<F>): void => {
-        if (timeout !== null) {
-            clearTimeout(timeout);
-        }
-        timeout = setTimeout(() => func(...args), waitFor);
-    };
+  return fileSystem
 }
 
-// Capitalize the first letter of a string
-export function capitalizeString(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}`,
-  'config.json': `{
-  "name": "my-project",
-  "version": "1.0.0",
-  "description": "A sample project configuration",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "test": "jest"
-  },
-  "dependencies": {
-    "express": "^4.17.1",
-    "lodash": "^4.17.21"
-  },
-  "devDependencies": {
-    "jest": "^27.0.6",
-    "typescript": "^4.3.5"
-  }
-}
-`,
-  'docker-compose.yml': `
-version: '3'
-services:
-  web:
-    build: .
-    ports:
-      - "5000:5000"
-  redis:
-    image: "redis:alpine"
-  db:
-    image: "postgres:13"
-    environment:
-      POSTGRES_PASSWORD: example
-volumes:
-  db-data:
-`,
-}
+// Read the test files
+const testDir = path.join(__dirname, 'test_files')
+console.log({ testDir })
+const fileSystem = readTestFiles(testDir)
 
 // Tests
 describe('File Comparison Tests', () => {
   test('Rust file with comments', () => {
     const searches = {
-      'src/main.rs': [
+      'main.rs': [
         [
           `// Main function
 fn main() {
@@ -197,8 +145,8 @@ fn main() {
     }
 
     const result = compareHunksToFiles(searches, fileSystem)
-    expect(result['src/main.rs']).toEqual({
-      fileName: 'src/main.rs',
+    expect(result['main.rs']).toEqual({
+      fileName: 'main.rs',
       fileLines: 14,
       hunks: [
         {
@@ -253,7 +201,7 @@ fn main() {
 
   test('TypeScript file with multi-line function', () => {
     const searches = {
-      'lib/utils.ts': [
+      'utils.ts': [
         [
           `export function debounce<F extends (...args: any[]) => any>(
     func: F,
@@ -270,8 +218,8 @@ fn main() {
     }
 
     const result = compareHunksToFiles(searches, fileSystem)
-    expect(result['lib/utils.ts']).toEqual({
-      fileName: 'lib/utils.ts',
+    expect(result['utils.ts']).toEqual({
+      fileName: 'utils.ts',
       fileLines: 22,
       hunks: [
         {
@@ -427,22 +375,22 @@ volumes:
     const result = compareHunksToFiles(searches, fileSystem)
     expect(result['docker-compose.yml']).toEqual({
       fileName: 'docker-compose.yml',
-      fileLines: 16,
+      fileLines: 15,
       hunks: [
         {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 2,
+              fileLineNum: 1,
               content: "version: '3'",
             },
-            { hunkLineNum: 2, fileLineNum: 3, content: 'services:' },
-            { hunkLineNum: 3, fileLineNum: 4, content: 'web:' },
-            { hunkLineNum: 4, fileLineNum: 5, content: 'build: .' },
-            { hunkLineNum: 5, fileLineNum: 6, content: 'ports:' },
+            { hunkLineNum: 2, fileLineNum: 2, content: 'services:' },
+            { hunkLineNum: 3, fileLineNum: 3, content: 'web:' },
+            { hunkLineNum: 4, fileLineNum: 4, content: 'build: .' },
+            { hunkLineNum: 5, fileLineNum: 5, content: 'ports:' },
             {
               hunkLineNum: 6,
-              fileLineNum: 7,
+              fileLineNum: 6,
               content: '- "5000:5000"',
             },
           ],
@@ -453,24 +401,24 @@ volumes:
         },
         {
           matches: [
-            { hunkLineNum: 1, fileLineNum: 10, content: 'db:' },
+            { hunkLineNum: 1, fileLineNum: 9, content: 'db:' },
             {
               hunkLineNum: 2,
-              fileLineNum: 11,
+              fileLineNum: 10,
               content: 'image: "postgres:13"',
             },
             {
               hunkLineNum: 3,
-              fileLineNum: 12,
+              fileLineNum: 11,
               content: 'environment:',
             },
             {
               hunkLineNum: 4,
-              fileLineNum: 13,
+              fileLineNum: 12,
               content: 'POSTGRES_PASSWORD: example',
             },
-            { hunkLineNum: 5, fileLineNum: 14, content: 'volumes:' },
-            { hunkLineNum: 6, fileLineNum: 15, content: 'db-data:' },
+            { hunkLineNum: 5, fileLineNum: 13, content: 'volumes:' },
+            { hunkLineNum: 6, fileLineNum: 14, content: 'db-data:' },
           ],
           mismatches: [],
           hunkLines: 6,
@@ -497,7 +445,7 @@ volumes:
 describe('File Comparison Tests - Partial Matches and Similar Content', () => {
   test('Rust file with similar but not exact content', () => {
     const searches = {
-      'src/main.rs': [
+      'main.rs': [
         [
           `// Main function
 fn main() {
@@ -513,20 +461,20 @@ fn main() {
     }
 
     const result = compareHunksToFiles(searches, fileSystem)
-    expect(result['src/main.rs']).toEqual({
-      fileName: 'src/main.rs',
+    expect(result['main.rs']).toEqual({
+      fileName: 'main.rs',
       fileLines: 14,
       hunks: [
         {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 4,
+              fileLineNum: 3,
               content: '// Main function',
             },
             {
               hunkLineNum: 2,
-              fileLineNum: 5,
+              fileLineNum: 4,
               content: 'fn main() {',
             },
           ],
@@ -543,8 +491,8 @@ fn main() {
           hunkLines: 4,
           matchPercentage: 50,
           errors: [
-            'Line 3 of hunk not found in src/main.rs: "let my_map = HashMap::new();"',
-            'Line 4 of hunk not found in src/main.rs: "my_map.insert("key1", "value1");"',
+            'Line 3 of hunk not found in main.rs: "let my_map = HashMap::new();"',
+            'Line 4 of hunk not found in main.rs: "my_map.insert("key1", "value1");"',
           ],
         },
         {
@@ -566,9 +514,9 @@ fn main() {
           hunkLines: 3,
           matchPercentage: 0,
           errors: [
-            'Line 1 of hunk not found in src/main.rs: "// Loop through the map"',
-            'Line 2 of hunk not found in src/main.rs: "for (k, v) in &my_map {"',
-            'Line 3 of hunk not found in src/main.rs: "println!("{}={}", k, v);"',
+            'Line 1 of hunk not found in main.rs: "// Loop through the map"',
+            'Line 2 of hunk not found in main.rs: "for (k, v) in &my_map {"',
+            'Line 3 of hunk not found in main.rs: "println!("{}={}", k, v);"',
           ],
         },
       ],
@@ -577,7 +525,7 @@ fn main() {
 
   test('TypeScript file with partial matches and similar functions', () => {
     const searches = {
-      'lib/utils.ts': [
+      'utils.ts': [
         [
           `export function debounce<T extends Function>(
     func: T,
@@ -594,15 +542,15 @@ fn main() {
     }
 
     const result = compareHunksToFiles(searches, fileSystem)
-    expect(result['lib/utils.ts']).toEqual({
-      fileName: 'lib/utils.ts',
+    expect(result['utils.ts']).toEqual({
+      fileName: 'utils.ts',
       fileLines: 22,
       hunks: [
         {
           matches: [
             {
               hunkLineNum: 4,
-              fileLineNum: 8,
+              fileLineNum: 7,
               content: ') {',
             },
           ],
@@ -628,17 +576,17 @@ fn main() {
           hunkLines: 5,
           matchPercentage: 20,
           errors: [
-            'Line 1 of hunk not found in lib/utils.ts: "export function debounce<T extends Function>("',
-            'Line 2 of hunk not found in lib/utils.ts: "func: T,"',
-            'Line 3 of hunk not found in lib/utils.ts: "delay: number"',
-            'Line 5 of hunk not found in lib/utils.ts: "let timer: NodeJS.Timeout | null = null;"',
+            'Line 1 of hunk not found in utils.ts: "export function debounce<T extends Function>("',
+            'Line 2 of hunk not found in utils.ts: "func: T,"',
+            'Line 3 of hunk not found in utils.ts: "delay: number"',
+            'Line 5 of hunk not found in utils.ts: "let timer: NodeJS.Timeout | null = null;"',
           ],
         },
         {
           matches: [
             {
               hunkLineNum: 3,
-              fileLineNum: 14,
+              fileLineNum: 13,
               content: '}',
             },
           ],
@@ -657,8 +605,8 @@ fn main() {
           hunkLines: 3,
           matchPercentage: 33.33333333333333,
           errors: [
-            'Line 1 of hunk not found in lib/utils.ts: "export function capitalize(str: string): string {"',
-            'Line 2 of hunk not found in lib/utils.ts: "return str[0].toUpperCase() + str.substring(1);"',
+            'Line 1 of hunk not found in utils.ts: "export function capitalize(str: string): string {"',
+            'Line 2 of hunk not found in utils.ts: "return str[0].toUpperCase() + str.substring(1);"',
           ],
         },
       ],
