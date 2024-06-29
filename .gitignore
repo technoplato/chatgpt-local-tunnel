@@ -86,3 +86,29 @@ tmp/
 
 # Docker
 docker-compose.override.yml
+
+# Python virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Project configuration
+project.toml
+
+# IDE-specific files (optional, but often useful)
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
