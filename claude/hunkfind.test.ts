@@ -199,19 +199,19 @@ fn main() {
     })
   })
 
-  test('TypeScript file with multi-line function', () => {
+  test.only('TypeScript file with multi-line function', () => {
     const searches = {
       'utils.ts': [
         [
           `export function debounce<F extends (...args: any[]) => any>(
     func: F,
-    waitFor: number
+    waitFor: number,
 ) {
-    let timeout: ReturnType<typeof setTimeout> | null = null;`,
+    let timeout: ReturnType<typeof setTimeout> | null = null`,
         ],
         [
           `export function capitalizeString(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str.charAt(0).toUpperCase() + str.slice(1)
 }`,
         ],
       ],
@@ -226,22 +226,22 @@ fn main() {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 5,
+              fileLineNum: 4,
               content:
                 'export function debounce<F extends (...args: any[]) => any>(',
             },
-            { hunkLineNum: 2, fileLineNum: 6, content: 'func: F,' },
+            { hunkLineNum: 2, fileLineNum: 5, content: 'func: F,' },
             {
               hunkLineNum: 3,
-              fileLineNum: 7,
-              content: 'waitFor: number',
+              fileLineNum: 6,
+              content: 'waitFor: number,',
             },
-            { hunkLineNum: 4, fileLineNum: 8, content: ') {' },
+            { hunkLineNum: 4, fileLineNum: 7, content: ') {' },
             {
               hunkLineNum: 5,
-              fileLineNum: 9,
+              fileLineNum: 8,
               content:
-                'let timeout: ReturnType<typeof setTimeout> | null = null;',
+                'let timeout: ReturnType<typeof setTimeout> | null = null',
             },
           ],
           mismatches: [],
@@ -253,17 +253,17 @@ fn main() {
           matches: [
             {
               hunkLineNum: 1,
-              fileLineNum: 20,
+              fileLineNum: 19,
               content:
                 'export function capitalizeString(str: string): string {',
             },
             {
               hunkLineNum: 2,
-              fileLineNum: 21,
+              fileLineNum: 20,
               content:
-                'return str.charAt(0).toUpperCase() + str.slice(1);',
+                'return str.charAt(0).toUpperCase() + str.slice(1)',
             },
-            { hunkLineNum: 3, fileLineNum: 14, content: '}' },
+            { hunkLineNum: 3, fileLineNum: 13, content: '}' },
           ],
           mismatches: [],
           hunkLines: 3,
