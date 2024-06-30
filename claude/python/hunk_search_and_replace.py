@@ -94,20 +94,26 @@ def create_backup(file_path: str) -> str:
     shutil.copy2(file_path, backup_path)
     return backup_path
 
-def create_patch(original_file: str, updated_file: str) -> str:
+def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], common_ancestor: str) -> str:
     try:
-        result = subprocess.run(['diff', '-u', original_file, updated_file],
-                                capture_output=True, text=True, check=False)
-        if result.returncode > 1:  # diff returns 1 if files are different, which is expected
-            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
-        return result.stdout
+        patch_content = ""
+        for file_name in original_files:
+            original_path = original_files[file_name]
+            updated_path = updated_files[file_name]
+            relative_path = os.path.relpath(file_name, common_ancestor)
+            result = subprocess.run(['diff', '-u', original_path, updated_path],
+                                    capture_output=True, text=True, check=False)
+            if result.returncode <= 1:  # 0 means no differences, 1 means differences found
+                patch_content += f"--- a/{relative_path}\n"
+                patch_content += f"+++ b/{relative_path}\n"
+                patch_content += result.stdout
+        return patch_content
     except FileNotFoundError:
         print("Error: The 'diff' utility is not available on this system.")
         return ""
 
 def create_base64_patch(patch_content: str) -> str:
     return base64.b64encode(patch_content.encode()).decode()
-
 
 def find_common_ancestor(file_paths: List[str]) -> str:
     if not file_paths:
@@ -116,7 +122,6 @@ def find_common_ancestor(file_paths: List[str]) -> str:
     while common_path and not os.path.isdir(common_path):
         common_path = os.path.dirname(common_path)
     return common_path
-
 
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
     search_results = compare_hunks_to_files(searches, file_system)
@@ -153,14 +158,12 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     patch_file = os.path.join(common_ancestor, "changes.patch")
     base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
 
+    patch_content = create_patch(backup_files, dict(zip(modified_files, modified_files)), common_ancestor)
+
     with open(patch_file, 'w') as f:
-        for file_name in modified_files:
-            patch_content = create_patch(backup_files[file_name], file_name)
-            f.write(patch_content)
+        f.write(patch_content)
 
     with open(base64_patch_file, 'w') as f:
-        with open(patch_file, 'r') as p:
-            patch_content = p.read()
         f.write(create_base64_patch(patch_content))
 
     return search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor
