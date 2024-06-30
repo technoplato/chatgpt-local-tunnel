@@ -2,6 +2,8 @@ import os
 import sys
 import json
 import shutil
+import base64
+import subprocess
 from typing import Dict, List, Union, TypedDict, Tuple
 import argparse
 
@@ -92,10 +94,35 @@ def create_backup(file_path: str) -> str:
     shutil.copy2(file_path, backup_path)
     return backup_path
 
-def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str]]:
+def create_patch(original_file: str, updated_file: str) -> str:
+    try:
+        result = subprocess.run(['diff', '-u', original_file, updated_file],
+                                capture_output=True, text=True, check=False)
+        if result.returncode > 1:  # diff returns 1 if files are different, which is expected
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+        return result.stdout
+    except FileNotFoundError:
+        print("Error: The 'diff' utility is not available on this system.")
+        return ""
+
+def create_base64_patch(patch_content: str) -> str:
+    return base64.b64encode(patch_content.encode()).decode()
+
+
+def find_common_ancestor(file_paths: List[str]) -> str:
+    if not file_paths:
+        return ""
+    common_path = os.path.commonpath(file_paths)
+    while common_path and not os.path.isdir(common_path):
+        common_path = os.path.dirname(common_path)
+    return common_path
+
+
+def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
     search_results = compare_hunks_to_files(searches, file_system)
     updated_files = file_system.copy()
     backup_files = {}
+    modified_files = []
 
     for file_name, result in search_results.items():
         if "error" in result or any(hunk["errors"] for hunk in result["hunks"]):
@@ -120,9 +147,23 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
         if changes_made:
             backup_files[file_name] = create_backup(file_name)
             updated_files[file_name] = '\n'.join(file_lines)
+            modified_files.append(file_name)
 
-    return search_results, updated_files, backup_files
+    common_ancestor = find_common_ancestor(modified_files)
+    patch_file = os.path.join(common_ancestor, "changes.patch")
+    base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
 
+    with open(patch_file, 'w') as f:
+        for file_name in modified_files:
+            patch_content = create_patch(backup_files[file_name], file_name)
+            f.write(patch_content)
+
+    with open(base64_patch_file, 'w') as f:
+        with open(patch_file, 'r') as p:
+            patch_content = p.read()
+        f.write(create_base64_patch(patch_content))
+
+    return search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor
 
 def read_file(file_path: str) -> str:
     with open(file_path, 'r') as f:
@@ -134,7 +175,7 @@ def write_file(file_path: str, content: str) -> None:
 
 def main():
     """
-    Search for hunks in files and optionally replace them, creating backups of original files.
+    Search for hunks in files and optionally replace them, creating backups of original files and generating patch files.
 
     Demo Usage:
     1. Search for a hunk:
@@ -178,9 +219,9 @@ def main():
     --replace "def new_function1():\n    print('New first function')\n    return True"
 
     Note: When replacing, the original file will be backed up with '.old' appended to its name.
-
-   """
-    parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them, creating backups.")
+    A patch file and its base64 encoded version will be created in the common ancestor directory of all modified files.
+    """
+    parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them, creating backups and patch files.")
     parser.add_argument("file_path", help="Path to the file to search in")
     parser.add_argument("search_hunks", nargs="+", help="Hunks to search for")
     parser.add_argument("--replace", nargs="+", help="Hunks to replace with (if specified, must match the number of search hunks)")
@@ -195,7 +236,7 @@ def main():
             return
 
         replacements = {args.file_path: [[hunk] for hunk in args.replace]}
-        search_results, updated_files, backup_files = replace_hunks_in_files(searches, replacements, file_system)
+        search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(searches, replacements, file_system)
 
         if any("error" in result for result in search_results.values()) or \
            any(hunk["errors"] for result in search_results.values() if "hunks" in result for hunk in result["hunks"]):
@@ -204,6 +245,9 @@ def main():
         else:
             write_file(args.file_path, updated_files[args.file_path])
             print(f"Replacement successful. Original file backed up to: {backup_files[args.file_path]}")
+            print(f"Patch file created: {patch_file}")
+            print(f"Base64 encoded patch file created: {base64_patch_file}")
+            print(f"Common ancestor directory: {common_ancestor}")
             print(json.dumps(search_results, indent=2))
     else:
         result = compare_hunks_to_files(searches, file_system)
