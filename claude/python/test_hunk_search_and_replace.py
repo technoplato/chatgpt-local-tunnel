@@ -156,6 +156,38 @@ fn main() {
             content = f.read()
         self.assertIn("fn modified_main() {", content)
 
+        # Extract the patch file path from the output
+        patch_file_line = next(line for line in output.split('\n') if "Patch file created:" in line)
+        patch_file_path = patch_file_line.split(": ")[1].strip()
+
+        # Read and print the patch file content
+        with open(patch_file_path, 'r') as f:
+            patch_content = f.read()
+        print("Patch file content:")
+        print(patch_content)
+
+        # Assert that the patch content is correct
+        expected_patch_content = f"""--- a/{os.path.basename(test_file)}
++++ b/{os.path.basename(test_file)}
+@@ -1,4 +1,4 @@
+ // Main function
+ use std::collections::HashMap;
+
+-fn main() {{
++fn modified_main() {{
+"""
+        self.assertIn(expected_patch_content, patch_content)
+
+        # Verify that the patch can be applied
+        backup_file = test_file + '.old'
+        result = subprocess.run(['patch', backup_file, patch_file_path], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, f"Patch application failed: {result.stderr}")
+
+        # Verify that the patched file matches the current file
+        with open(backup_file, 'r') as f:
+            patched_content = f.read()
+        self.assertEqual(patched_content, content, "Patched file does not match the current file")
+
     def test_create_patch(self):
         file_path = os.path.join(self.temp_dir, 'test.txt')
 
