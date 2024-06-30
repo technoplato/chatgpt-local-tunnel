@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import shutil
 from typing import Dict, List, Union, TypedDict, Tuple
 import argparse
 
@@ -84,19 +85,26 @@ def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: Fi
 
     return results
 
-def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str]]:
+def create_backup(file_path: str) -> str:
+    """Create a backup of the original file with 'old' appended to its name."""
+    base, ext = os.path.splitext(file_path)
+    backup_path = f"{base}.old{ext}"
+    shutil.copy2(file_path, backup_path)
+    return backup_path
+
+def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str]]:
     search_results = compare_hunks_to_files(searches, file_system)
     updated_files = file_system.copy()
+    backup_files = {}
 
     for file_name, result in search_results.items():
-        if "error" in result:
+        if "error" in result or any(hunk["errors"] for hunk in result["hunks"]):
             continue
 
         file_lines = updated_files[file_name].split('\n')
-        for hunk_index, hunk_result in enumerate(result["hunks"]):
-            if hunk_result["errors"]:
-                continue
+        changes_made = False
 
+        for hunk_index, hunk_result in enumerate(result["hunks"]):
             replacement_lines = replacements[file_name][hunk_index][0].split('\n')
             start_line = hunk_result["matches"][0]["fileLineNum"] - 1
             end_line = hunk_result["matches"][-1]["fileLineNum"]
@@ -107,10 +115,14 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
                 replacement_lines = [' ' * original_indent + line for line in replacement_lines]
 
             file_lines[start_line:end_line] = replacement_lines
+            changes_made = True
 
-        updated_files[file_name] = '\n'.join(file_lines)
+        if changes_made:
+            backup_files[file_name] = create_backup(file_name)
+            updated_files[file_name] = '\n'.join(file_lines)
 
-    return search_results, updated_files
+    return search_results, updated_files, backup_files
+
 
 def read_file(file_path: str) -> str:
     with open(file_path, 'r') as f:
@@ -122,7 +134,7 @@ def write_file(file_path: str, content: str) -> None:
 
 def main():
     """
-    Search for hunks in files and optionally replace them.
+    Search for hunks in files and optionally replace them, creating backups of original files.
 
     Demo Usage:
     1. Search for a hunk:
@@ -165,8 +177,10 @@ def main():
     python hunk_search.py path/to/file.txt "def function1():\n    print('First function')\n    return None" \
     --replace "def new_function1():\n    print('New first function')\n    return True"
 
-    """
-    parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them.")
+    Note: When replacing, the original file will be backed up with '.old' appended to its name.
+
+   """
+    parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them, creating backups.")
     parser.add_argument("file_path", help="Path to the file to search in")
     parser.add_argument("search_hunks", nargs="+", help="Hunks to search for")
     parser.add_argument("--replace", nargs="+", help="Hunks to replace with (if specified, must match the number of search hunks)")
@@ -181,7 +195,7 @@ def main():
             return
 
         replacements = {args.file_path: [[hunk] for hunk in args.replace]}
-        search_results, updated_files = replace_hunks_in_files(searches, replacements, file_system)
+        search_results, updated_files, backup_files = replace_hunks_in_files(searches, replacements, file_system)
 
         if any("error" in result for result in search_results.values()) or \
            any(hunk["errors"] for result in search_results.values() if "hunks" in result for hunk in result["hunks"]):
@@ -189,7 +203,7 @@ def main():
             print(json.dumps(search_results, indent=2))
         else:
             write_file(args.file_path, updated_files[args.file_path])
-            print("Replacement successful.")
+            print(f"Replacement successful. Original file backed up to: {backup_files[args.file_path]}")
             print(json.dumps(search_results, indent=2))
     else:
         result = compare_hunks_to_files(searches, file_system)
