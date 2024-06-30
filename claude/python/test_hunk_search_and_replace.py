@@ -50,8 +50,9 @@ pub fn subtract(a: i32, b: i32) -> i32 {
                 f.write(content)
 
     def tearDown(self):
-        if os.path.exists(self.project_root):
-            shutil.rmtree(self.project_root)
+        pass
+        # if os.path.exists(self.project_root):
+        #     shutil.rmtree(self.project_root)
 
     def print_diff_command(self, original_file, updated_file):
         print(f"\nDiff command to run manually:")

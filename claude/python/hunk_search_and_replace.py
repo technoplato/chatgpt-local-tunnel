@@ -48,6 +48,20 @@ SearchResult = Dict[str, Union[FileResult, ErrorResult]]
 
 
 def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: FileSystem) -> SearchResult:
+    """
+    Compare search hunks to files in the file system.
+
+    This function is crucial for identifying where changes need to be made. It allows us to
+    locate specific code segments within files, which is essential for targeted modifications.
+    The detailed results it provides help in making informed decisions about replacements.
+
+    Args:
+    searches: A dictionary mapping file paths to lists of search hunks.
+    file_system: A dictionary representing the file system, mapping file paths to their content.
+
+    Returns:
+    A SearchResult dictionary containing detailed information about matches and mismatches.
+    """
     results: SearchResult = {}
 
     for file_name, hunks in searches.items():
@@ -105,7 +119,19 @@ def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: Fi
 
 
 def create_backup(file_path: str) -> str:
-    """Create a backup of the original file with 'old' appended to its name."""
+    """
+    Create a backup of the original file.
+
+    This function is essential for maintaining data integrity and allowing for rollback.
+    It provides a safety net, ensuring that original file contents are preserved before
+    any modifications are made.
+
+    Args:
+    file_path: The path of the file to be backed up.
+
+    Returns:
+    The path of the created backup file.
+    """
     base, ext = os.path.splitext(file_path)
     backup_path = f"{base}.old{ext}"
     shutil.copy2(file_path, backup_path)
@@ -114,6 +140,19 @@ def create_backup(file_path: str) -> str:
 
 
 def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patch_file: str) -> None:
+    """
+    Create a patch file representing the differences between original and updated files.
+
+    This function is crucial for version control and change management. It allows us to
+    track modifications, review changes, and potentially apply or revert them later.
+    The use of relative paths in the patch makes it more portable across different environments.
+
+    Args:
+    original_dir: Directory containing the original files.
+    updated_dir: Directory containing the updated files.
+    common_ancestor: Common ancestor directory for creating relative paths.
+    patch_file: Path where the patch file should be created.
+    """
     logging.info("Starting patch creation process")
     try:
         result = subprocess.run(['diff', '-ruN', original_dir, updated_dir],
@@ -152,6 +191,28 @@ def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patc
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]],
                            file_system: FileSystem) -> Tuple[
     SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
+    """
+    Replace specified hunks in files with their corresponding replacements.
+
+    This function is the core of our search and replace functionality. It orchestrates the entire
+    process of finding matches, creating backups, applying changes, and generating patch files.
+    It's designed to handle multiple files and multiple hunks per file, making it versatile for
+    various code modification scenarios.
+
+    Args:
+    searches: A dictionary mapping file paths to lists of search hunks.
+    replacements: A dictionary mapping file paths to lists of replacement hunks.
+    file_system: A dictionary representing the file system, mapping file paths to their content.
+
+    Returns:
+    A tuple containing:
+    - Search results
+    - Updated file contents
+    - Backup file paths
+    - Path to the created patch file
+    - Path to the base64 encoded patch file
+    - Common ancestor directory
+    """
     logging.info("Starting replace_hunks_in_files function")
     search_results = compare_hunks_to_files(searches, file_system)
     updated_files = file_system.copy()
@@ -260,10 +321,37 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
 
 
 def create_base64_patch(patch_content: str) -> str:
+    """
+    Create a base64 encoded version of the patch content.
+
+    This function is useful for situations where we need to transmit or store the patch
+    in a format that's safe for text-based systems. Base64 encoding ensures that the
+    patch can be safely included in JSON or XML documents, or transmitted over protocols
+    that may mangle binary data.
+
+    Args:
+    patch_content: The content of the patch file as a string.
+
+    Returns:
+    A base64 encoded string of the patch content.
+    """
     return base64.b64encode(patch_content.encode()).decode()
 
 
 def find_common_ancestor(file_paths: List[str]) -> str:
+    """
+    Find the common ancestor directory of all given file paths.
+
+    This function is crucial for generating relative paths in the patch file. By identifying
+    the common ancestor, we can create patches that are more portable and can be applied
+    in different directory structures, as long as the relative structure is maintained.
+
+    Args:
+    file_paths: A list of file paths to find the common ancestor for.
+
+    Returns:
+    The path of the common ancestor directory.
+    """
     if not file_paths:
         return ""
     common_path = os.path.commonpath(file_paths)
@@ -273,11 +361,34 @@ def find_common_ancestor(file_paths: List[str]) -> str:
 
 
 def read_file(file_path: str) -> str:
+    """
+    Read the contents of a file.
+
+    This utility function centralizes file reading operations, making it easier to add
+    error handling or logging if needed in the future.
+
+    Args:
+    file_path: The path of the file to read.
+
+    Returns:
+    The contents of the file as a string.
+    """
     with open(file_path, 'r') as f:
         return f.read()
 
 
 def write_file(file_path: str, content: str) -> None:
+    """
+    Write content to a file.
+
+    This function centralizes file writing operations, including safety checks to ensure
+    the content is actually written. It's crucial for maintaining data integrity when
+    modifying files.
+
+    Args:
+    file_path: The path of the file to write.
+    content: The content to write to the file.
+    """
     with open(file_path, 'w') as f:
         f.write(content)
 
@@ -293,71 +404,50 @@ def main():
     """
     Search for hunks in files and optionally replace them, creating backups of original files and generating patch files.
 
-    Demo Usage:
-    1. Search for a hunk:
-       python hunk_search.py path/to/file.txt "search hunk"
+    This main function orchestrates the entire process of searching and replacing content in files.
+    It handles command-line arguments, performs the replacements, and manages the creation of
+    backup and patch files. This function is designed to be the entry point of the script when
+    run from the command line.
 
-    2. Search for multiple hunks:
-       python hunk_search.py path/to/file.txt "search hunk 1" "search hunk 2"
+    Usage examples:
+    1. Search for hunks in a single file:
+       python hunk_search_and_replace.py -f path/to/file.txt -s "search hunk"
 
-    3. Search and replace a single hunk:
-       python hunk_search.py path/to/file.txt "search hunk" --replace "replacement hunk"
+    2. Search and replace in multiple files:
+       python hunk_search_and_replace.py -f file1.txt -s "search1" -r "replace1" -f file2.txt -s "search2" -r "replace2"
 
-    4. Search and replace multiple hunks:
-       python hunk_search.py path/to/file.txt "search hunk 1" "search hunk 2" --replace "replacement 1" "replacement 2"
-
-    5. Search for a multi-line hunk:
-       python hunk_search.py path/to/file.txt "def example_function():
+    3. Search and replace with multi-line hunks:
+       python hunk_search_and_replace.py -f file.txt -s "def example_function():
            print('Hello, World!')
-           return None"
-
-    6. Replace with a multi-line hunk:
-       python hunk_search.py path/to/file.txt "def example_function():" --replace "def new_function():
+           return None" -r "def new_function():
            print('Hello, Universe!')
            return True"
 
-    7. Replace multiple multi-line hunks:
-       python hunk_search.py path/to/file.txt "def function1():
-       print('First function')
-       return None" "def function2():
-       print('Second function')
-       return False" --replace "def new_function1():
-       print('New first function')
-       return True" "def new_function2():
-       print('New second function')
-       return True"
-
-    Note: When using multi-line hunks, enclose them in quotes and be careful with indentation.
+    Note: When using multi-line hunks, be careful with indentation and newline characters.
     In some shells, you may need to escape newlines with backslashes for multi-line input.
-
-    Example with escaped newlines:
-    python hunk_search.py path/to/file.txt "def function1():\n    print('First function')\n    return None" \
-    --replace "def new_function1():\n    print('New first function')\n    return True"
-
-    Note: When replacing, the original file will be backed up with '.old' appended to its name.
-    A patch file and its base64 encoded version will be created in the common ancestor directory of all modified files.
     """
     parser = argparse.ArgumentParser(
         description="Search for hunks in files and optionally replace them, creating backups and patch files.")
-    parser.add_argument("file_path", help="Path to the file to search in")
-    parser.add_argument("search_hunks", nargs="+", help="Hunks to search for")
-    parser.add_argument("--replace", nargs="+",
-                        help="Hunks to replace with (if specified, must match the number of search hunks)")
+    parser.add_argument("-f", "--file", action='append', required=True, help="Path to the file to search in")
+    parser.add_argument("-s", "--search", action='append', required=True, help="Hunk to search for")
+    parser.add_argument("-r", "--replace", action='append', help="Hunk to replace with")
     args = parser.parse_args()
 
-    file_system = {args.file_path: read_file(args.file_path)}
-    searches = {args.file_path: [[hunk] for hunk in args.search_hunks]}
+    if args.replace and len(args.replace) != len(args.search):
+        print("Error: The number of replacement hunks must match the number of search hunks.")
+        return
+
+    file_system = {file_path: read_file(file_path) for file_path in args.file}
+    searches = {file_path: [[hunk] for hunk in args.search] for file_path in args.file}
 
     if args.replace:
-        if len(args.replace) != len(args.search_hunks):
-            print("Error: The number of replacement hunks must match the number of search hunks.")
-            return
+        replacements = {file_path: [[hunk] for hunk in args.replace] for file_path in args.file}
 
-        replacements = {args.file_path: [[hunk] for hunk in args.replace]}
-
-        # Calculate and log the hash of the original file
-        original_hash = hashlib.md5(file_system[args.file_path].encode()).hexdigest()
-        logging.info(f"Original file hash: {original_hash}")
+        # Calculate and log the hash of the original files
+        original_hashes = {file_path: hashlib.md5(content.encode()).hexdigest()
+                           for file_path, content in file_system.items()}
+        for file_path, hash_value in original_hashes.items():
+            logging.info(f"Original file hash for {file_path}: {hash_value}")
 
         search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(
             searches, replacements, file_system)
@@ -368,25 +458,28 @@ def main():
             print("Errors occurred during search. Replacement aborted.")
             print(json.dumps(search_results, indent=2))
         else:
-            # Calculate and log the hash of the updated file
-            updated_hash = hashlib.md5(updated_files[args.file_path].encode()).hexdigest()
-            logging.info(f"Updated file hash: {updated_hash}")
+            # Calculate and log the hash of the updated files
+            for file_path, content in updated_files.items():
+                updated_hash = hashlib.md5(content.encode()).hexdigest()
+                logging.info(f"Updated file hash for {file_path}: {updated_hash}")
 
-            if original_hash == updated_hash:
-                logging.error("File content did not change after replacement.")
-                raise AssertionError("File content did not change after replacement.")
+                if original_hashes[file_path] == updated_hash:
+                    logging.error(f"File content did not change after replacement: {file_path}")
+                    raise AssertionError(f"File content did not change after replacement: {file_path}")
 
-            write_file(args.file_path, updated_files[args.file_path])
+                write_file(file_path, content)
 
-            # Verify that the file was actually modified
-            with open(args.file_path, 'r') as f:
-                final_content = f.read()
-            final_hash = hashlib.md5(final_content.encode()).hexdigest()
-            if final_hash != updated_hash:
-                logging.error("File content does not match expected content after writing.")
-                raise AssertionError("File content does not match expected content after writing.")
+                # Verify that the file was actually modified
+                with open(file_path, 'r') as f:
+                    final_content = f.read()
+                final_hash = hashlib.md5(final_content.encode()).hexdigest()
+                if final_hash != updated_hash:
+                    logging.error(f"File content does not match expected content after writing: {file_path}")
+                    raise AssertionError(f"File content does not match expected content after writing: {file_path}")
 
-            print(f"Replacement successful. Original file backed up to: {backup_files[args.file_path]}")
+            print("Replacement successful.")
+            for file_path, backup_path in backup_files.items():
+                print(f"Original file {file_path} backed up to: {backup_path}")
             if os.path.exists(patch_file):
                 print(f"Patch file created: {patch_file}")
                 print(f"Base64 encoded patch file created: {base64_patch_file}")
