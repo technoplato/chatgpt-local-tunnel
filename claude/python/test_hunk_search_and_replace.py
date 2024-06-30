@@ -207,6 +207,8 @@ fn main() {
         else:
             print("\nPatch file does not exist")
             patch_content = ""
+        # Check if the file content has actually changed
+        self.assertNotEqual(original_content, updated_content, "File content should have changed")
 
         if base64_patch_file and os.path.exists(base64_patch_file):
             with open(base64_patch_file, 'r') as f:

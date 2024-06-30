@@ -117,10 +117,12 @@ def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], 
             logging.debug(f"Diff command stdout: {result.stdout}")
             logging.debug(f"Diff command stderr: {result.stderr}")
 
-            if result.returncode <= 1:  # 0 means no differences, 1 means differences found
+            if result.returncode == 1:  # 1 means differences found
                 logging.info(f"Differences found in file: {file_name}")
                 # Include the entire diff output, including headers
                 patch_content += result.stdout
+            elif result.returncode == 0:
+                logging.info(f"No differences found in file: {file_name}")
             else:
                 logging.warning(f"Unexpected return code from diff command: {result.returncode}")
 
@@ -129,7 +131,7 @@ def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], 
     except FileNotFoundError:
         logging.error("Error: The 'diff' utility is not available on this system.")
         return ""
-
+        
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
     logging.info("Starting replace_hunks_in_files function")
     search_results = compare_hunks_to_files(searches, file_system)
