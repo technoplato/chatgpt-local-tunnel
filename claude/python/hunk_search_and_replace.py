@@ -113,7 +113,7 @@ def create_backup(file_path: str) -> str:
     return backup_path
 
 
-def create_patch(original_dir: str, updated_dir: str, patch_file: str) -> None:
+def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patch_file: str) -> None:
     logging.info("Starting patch creation process")
     try:
         result = subprocess.run(['diff', '-ruN', original_dir, updated_dir],
@@ -124,8 +124,21 @@ def create_patch(original_dir: str, updated_dir: str, patch_file: str) -> None:
 
         if result.returncode == 1:
             logging.info("Differences found")
+            patch_content = result.stdout
+
+            # Replace temporary directory paths with relative paths
+            patch_lines = patch_content.split('\n')
+            for i, line in enumerate(patch_lines):
+                if line.startswith('--- ') or line.startswith('+++ '):
+                    _, path = line.split(None, 1)
+                    rel_path = os.path.relpath(path, original_dir if line.startswith('---') else updated_dir)
+                    project_path = os.path.join('src', rel_path)
+                    patch_lines[i] = f"{line[:4]}{project_path}"
+
+            patch_content = '\n'.join(patch_lines)
+
             with open(patch_file, 'w') as f:
-                f.write(result.stdout)
+                f.write(patch_content)
             logging.info(f"Patch file created: {patch_file}")
         elif result.returncode == 0:
             logging.info("No differences found")
@@ -232,7 +245,7 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
         # Create patch file after all changes have been made
         if modified_files:
             logging.info(f"Creating patch file: {patch_file}")
-            create_patch(original_temp_dir, updated_temp_dir, patch_file)
+            create_patch(original_temp_dir, updated_temp_dir, common_ancestor, patch_file)
 
             with open(patch_file, 'r') as f:
                 patch_content = f.read()

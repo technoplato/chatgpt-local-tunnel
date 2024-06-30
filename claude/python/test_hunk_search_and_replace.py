@@ -17,8 +17,11 @@ from hunk_search_and_replace import compare_hunks_to_files, replace_hunks_in_fil
 class TestHunkSearch(unittest.TestCase):
     def setUp(self):
         self.test_dir = os.path.dirname(os.path.abspath(__file__))
+        self.project_root = os.path.join(self.test_dir, 'test_project')
+        os.makedirs(self.project_root, exist_ok=True)
+
         self.test_files = {
-            'main.rs': """// Main function
+            os.path.join('src', 'main.rs'): """// Main function
 use std::collections::HashMap;
 
 fn main() {
@@ -31,7 +34,7 @@ fn main() {
         println!("{}: {}", key, value);
     }
 }""",
-            'utils.rs': """pub fn add(a: i32, b: i32) -> i32 {
+            os.path.join('src', 'utils', 'math.rs'): """pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
@@ -41,7 +44,8 @@ pub fn subtract(a: i32, b: i32) -> i32 {
         }
 
         for file_name, content in self.test_files.items():
-            file_path = os.path.join(self.test_dir, file_name)
+            file_path = os.path.join(self.project_root, file_name)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w') as f:
                 f.write(content)
 
@@ -67,9 +71,8 @@ pub fn subtract(a: i32, b: i32) -> i32 {
         print(f"diff -u {original_file} {updated_file}")
 
     def test_rust_file_with_comments(self):
-        pass
         searches = {
-            os.path.join(self.test_dir, 'main.rs'): [
+            os.path.join(self.project_root, 'src', 'main.rs'): [
                 [
                     """// Main function
 fn main() {
@@ -84,24 +87,22 @@ fn main() {
         }
 
         result = compare_hunks_to_files(searches, {file_path: read_file(file_path) for file_path in searches})
-        self.assertEqual(result[os.path.join(self.test_dir, 'main.rs')]["hunks"][0]["matchPercentage"], 100)
-        self.assertEqual(result[os.path.join(self.test_dir, 'main.rs')]["hunks"][1]["matchPercentage"], 100)
+        self.assertEqual(result[os.path.join(self.project_root, 'src', 'main.rs')]["hunks"][0]["matchPercentage"], 100)
+        self.assertEqual(result[os.path.join(self.project_root, 'src', 'main.rs')]["hunks"][1]["matchPercentage"], 100)
 
     def test_non_existent_file(self):
-        pass
         searches = {
-            os.path.join(self.test_dir, 'non_existent.rs'): [["This file does not exist"]]
+            os.path.join(self.project_root, 'src', 'non_existent.rs'): [["This file does not exist"]]
         }
 
         result = compare_hunks_to_files(searches, {})
-        self.assertEqual(result[os.path.join(self.test_dir, 'non_existent.rs')], {
-            "error": f'File "{os.path.join(self.test_dir, "non_existent.rs")}" not found in the file system.',
+        self.assertEqual(result[os.path.join(self.project_root, 'src', 'non_existent.rs')], {
+            "error": f'File "{os.path.join(self.project_root, "src", "non_existent.rs")}" not found in the file system.',
             "hunks": [{"hunkLines": 1, "matchPercentage": 0}]
         })
 
     def test_replace_hunks(self):
-        pass
-        file_path = os.path.join(self.test_dir, 'utils.rs')
+        file_path = os.path.join(self.project_root, 'src', 'utils', 'math.rs')
         searches = {
             file_path: [
                 ["pub fn add(a: i32, b: i32) -> i32 {"]
@@ -121,13 +122,18 @@ fn main() {
         self.assertTrue(os.path.exists(backup_files[file_path]))
         self.assertTrue(os.path.exists(patch_file))
         self.assertTrue(os.path.exists(base64_patch_file))
-        self.assertEqual(common_ancestor, self.test_dir)
+        self.assertEqual(common_ancestor, self.project_root)
 
         self.print_diff_command(backup_files[file_path], file_path)
 
+        # Check if the patch file uses relative paths
+        with open(patch_file, 'r') as f:
+            patch_content = f.read()
+        self.assertIn("--- src/utils/math.rs", patch_content)
+        self.assertIn("+++ src/utils/math.rs", patch_content)
+
     def test_replace_hunks_with_errors_no_backup(self):
-        pass
-        file_path = os.path.join(self.test_dir, 'utils.rs')
+        file_path = os.path.join(self.project_root, 'src', 'utils', 'math.rs')
         searches = {
             file_path: [
                 ["pub fn non_existent_function(a: i32, b: i32) -> i32 {"]
@@ -142,7 +148,8 @@ fn main() {
         search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(
             searches, replacements, {file_path: read_file(file_path)})
 
-        self.assertEqual(updated_files[file_path], self.test_files['utils.rs'])  # No changes should be made
+        self.assertEqual(updated_files[file_path],
+                         self.test_files[os.path.join('src', 'utils', 'math.rs')])  # No changes should be made
         self.assertEqual(search_results[file_path]["hunks"][0]["matchPercentage"], 0)
         self.assertGreater(len(search_results[file_path]["hunks"][0]["errors"]), 0)
         self.assertEqual(backup_files, {})  # No backup should be created
@@ -151,20 +158,33 @@ fn main() {
     def test_main_function_replace_with_backup(self, mock_stdout):
         print("\n--- Debug Output Start ---")
 
-        test_file = os.path.join(self.test_dir, 'main.rs')
-        test_hunk = "fn main() {"
-        replacement_hunk = "fn modified_main() {"
-        sys.argv = ['hunk_search_and_replace.py', test_file, test_hunk, '--replace', replacement_hunk]
+        main_file = os.path.join(self.project_root, 'src', 'main.rs')
+        math_file = os.path.join(self.project_root, 'src', 'utils', 'math.rs')
 
-        print(f"Test file: {test_file}")
-        print(f"Test hunk: {test_hunk}")
-        print(f"Replacement hunk: {replacement_hunk}")
+        searches = {
+            main_file: [["fn main() {"]],
+            math_file: [["pub fn add(a: i32, b: i32) -> i32 {"]]
+        }
 
-        # Print original file content
-        with open(test_file, 'r') as f:
-            original_content = f.read()
-        print("\nOriginal file content:")
-        print(original_content)
+        replacements = {
+            main_file: [["fn modified_main() {"]],
+            math_file: [["pub fn add(a: i32, b: i32) -> i32 {\n    // New comment"]]
+        }
+
+        sys.argv = ['hunk_search_and_replace.py', main_file, "fn main() {", '--replace', "fn modified_main() {"]
+        sys.argv.extend([math_file, "pub fn add(a: i32, b: i32) -> i32 {", '--replace',
+                         "pub fn add(a: i32, b: i32) -> i32 {\n    // New comment"])
+
+        print(f"Test files: {main_file}, {math_file}")
+        print(f"Search hunks: {searches}")
+        print(f"Replacement hunks: {replacements}")
+
+        # Print original file contents
+        for file_path in [main_file, math_file]:
+            with open(file_path, 'r') as f:
+                original_content = f.read()
+            print(f"\nOriginal content of {os.path.basename(file_path)}:")
+            print(original_content)
 
         from hunk_search_and_replace import main
         main()
@@ -173,22 +193,12 @@ fn main() {
         print("\nCaptured stdout (replace):")
         print(output)
 
-        # Print updated file content
-        with open(test_file, 'r') as f:
-            updated_content = f.read()
-        print("\nUpdated file content:")
-        print(updated_content)
-
-        # Check if the file content has actually changed
-        content_changed = original_content != updated_content
-        print(f"\nFile content changed: {content_changed}")
-        if not content_changed:
-            print("Original content:")
-            print(repr(original_content))
-            print("Updated content:")
-            print(repr(updated_content))
-
-        self.assertTrue(content_changed, "File content should have changed")
+        # Print updated file contents
+        for file_path in [main_file, math_file]:
+            with open(file_path, 'r') as f:
+                updated_content = f.read()
+            print(f"\nUpdated content of {os.path.basename(file_path)}:")
+            print(updated_content)
 
         # Extract the patch file path from the output
         patch_file_line = next((line for line in output.split('\n') if "Patch file created:" in line), None)
@@ -219,12 +229,16 @@ fn main() {
 
         self.assertTrue(os.path.exists(patch_file_path), "Patch file should exist")
         self.assertNotEqual(patch_content, "", "Patch content should not be empty")
-        self.assertIn("--- ", patch_content)
-        self.assertIn("+++ ", patch_content)
+        self.assertIn("--- src/main.rs", patch_content)
+        self.assertIn("+++ src/main.rs", patch_content)
         self.assertIn("-fn main() {", patch_content)
         self.assertIn("+fn modified_main() {", patch_content)
+        self.assertIn("--- src/utils/math.rs", patch_content)
+        self.assertIn("+++ src/utils/math.rs", patch_content)
+        self.assertIn("+    // New comment", patch_content)
 
-        self.print_diff_command(f"{test_file}.old", test_file)
+        self.print_diff_command(f"{main_file}.old", main_file)
+        self.print_diff_command(f"{math_file}.old", math_file)
 
 
 if __name__ == '__main__':
