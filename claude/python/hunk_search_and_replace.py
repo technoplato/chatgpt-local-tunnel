@@ -175,7 +175,7 @@ def create_backup(file_path: str) -> str:
     return backup_path
 
 
-def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patch_file: str) -> None:
+def create_patch(original_dir: str, updated_dir: str, patch_file: str) -> None:
     """
     Create a patch file representing the differences between original and updated files.
 
@@ -274,8 +274,9 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     modified_files = []
 
     common_ancestor = find_common_ancestor(list(searches.keys()))
-    patch_file = os.path.join(common_ancestor, "changes.patch")
-    base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
+    project_root = find_project_root(list(searches.keys()))
+    patch_file = os.path.join(project_root, "changes.patch")
+    base64_patch_file = os.path.join(project_root, "changes.patch.b64")
 
     # Create temporary directories for original and updated files
     with tempfile.TemporaryDirectory() as original_temp_dir, tempfile.TemporaryDirectory() as updated_temp_dir:
@@ -360,7 +361,7 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
         # Create patch file after all changes have been made
         if modified_files:
             logging.info(f"Creating patch file: {patch_file}")
-            create_patch(original_temp_dir, updated_temp_dir, common_ancestor, patch_file)
+            create_patch(original_temp_dir, updated_temp_dir, patch_file)
 
             with open(patch_file, 'r') as f:
                 patch_content = f.read()
@@ -390,6 +391,48 @@ def create_base64_patch(patch_content: str) -> str:
     A base64 encoded string of the patch content.
     """
     return base64.b64encode(patch_content.encode()).decode()
+
+
+def find_project_root(file_paths: List[str]) -> str:
+    """
+    Find the project root directory based on a list of file paths.
+
+    This function first finds the common ancestor of all given file paths,
+    then looks for common project root indicators. If no indicators are found,
+    it falls back to using the common ancestor as the project root.
+
+    Args:
+    file_paths: A list of file paths within the project.
+
+    Returns:
+    The path of the identified project root directory.
+    """
+    common_ancestor = find_common_ancestor(file_paths)
+
+    # List of common files/directories that indicate a project root
+    root_indicators = [
+        '.git',
+        '.hg',
+        '.svn',
+        'pyproject.toml',
+        'setup.py',
+        'package.json',
+        'Cargo.toml',
+        'pom.xml',
+        'build.gradle',
+        'Makefile',
+        'CMakeLists.txt'
+    ]
+
+    current_dir = common_ancestor
+    while current_dir != os.path.dirname(current_dir):  # Stop at filesystem root
+        for indicator in root_indicators:
+            if os.path.exists(os.path.join(current_dir, indicator)):
+                return current_dir
+        current_dir = os.path.dirname(current_dir)
+
+    # If no indicators found, return the common ancestor
+    return common_ancestor
 
 
 def find_common_ancestor(file_paths: List[str]) -> str:
@@ -503,7 +546,6 @@ def main():
     file_system = {file_path: read_file(file_path) for file_path in searches.keys()}
 
     if args.replace:
-
         search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(
             searches, replacements, file_system)
 
@@ -513,9 +555,7 @@ def main():
             print("Errors occurred during search. Replacement aborted.")
             print(json.dumps(search_results, indent=2))
         else:
-            # Calculate and log the hash of the updated files
             for file_path, content in updated_files.items():
-
                 write_file(file_path, content)
 
             print("Replacement successful.")
@@ -526,6 +566,7 @@ def main():
                 print(f"Base64 encoded patch file created: {base64_patch_file}")
             else:
                 print("No patch file created as no changes were made.")
+            print(f"Project root directory: {os.path.dirname(patch_file)}")
             print(f"Common ancestor directory: {common_ancestor}")
             print(json.dumps(search_results, indent=2))
     else:
