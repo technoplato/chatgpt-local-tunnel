@@ -98,10 +98,9 @@ def create_backup(file_path: str) -> str:
     shutil.copy2(file_path, backup_path)
     return backup_path
 
-def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], common_ancestor: str) -> str:
+def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], common_ancestor: str, patch_file: str) -> None:
     logging.info("Starting patch creation process")
     try:
-        patch_content = ""
         for file_name in original_files:
             original_path = original_files[file_name]
             updated_path = updated_files[file_name]
@@ -117,20 +116,20 @@ def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], 
             logging.debug(f"Diff command stdout: {result.stdout}")
             logging.debug(f"Diff command stderr: {result.stderr}")
 
-            if result.returncode == 1:  # 1 means differences found
+            if result.returncode == 1:
                 logging.info(f"Differences found in file: {file_name}")
-                # Include the entire diff output, including headers
-                patch_content += result.stdout
+                with open(patch_file, 'a') as f:
+                    f.write(f"--- {relative_path}\n")
+                    f.write(f"+++ {relative_path}\n")
+                    f.write(result.stdout)
+                logging.info(f"Appended patch for {file_name} to {patch_file}")
             elif result.returncode == 0:
                 logging.info(f"No differences found in file: {file_name}")
             else:
                 logging.warning(f"Unexpected return code from diff command: {result.returncode}")
 
-        logging.info(f"Patch creation completed. Patch content length: {len(patch_content)}")
-        return patch_content
     except FileNotFoundError:
         logging.error("Error: The 'diff' utility is not available on this system.")
-        return ""
 
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
     logging.info("Starting replace_hunks_in_files function")
@@ -138,6 +137,14 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     updated_files = file_system.copy()
     backup_files = {}
     modified_files = []
+
+    common_ancestor = find_common_ancestor(list(searches.keys()))
+    patch_file = os.path.join(common_ancestor, "changes.patch")
+    base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
+
+    # Ensure the directory exists before creating the file
+    os.makedirs(os.path.dirname(patch_file), exist_ok=True)
+    open(patch_file, 'w').close()
 
     for file_name, result in search_results.items():
         logging.info(f"Processing file: {file_name}")
@@ -171,24 +178,27 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
 
         if changes_made:
             logging.info(f"Changes made to file: {file_name}")
+            temp_path = file_name + '.tmp'
+            with open(temp_path, 'w') as f:
+                f.write('\n'.join(file_lines))
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_path, file_name)
             updated_files[file_name] = '\n'.join(file_lines)
             modified_files.append(file_name)
             logging.debug(f"Updated file content: {updated_files[file_name]}")
+
+            logging.info(f"File content after writing: {updated_files[file_name]}")
+            logging.info(f"File mtime after: {os.path.getmtime(file_name)}")
         else:
             logging.info(f"No changes made to file: {file_name}")
 
-    common_ancestor = find_common_ancestor(modified_files)
-    patch_file = os.path.join(common_ancestor, "changes.patch")
-    base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
-
     logging.info(f"Creating patch file: {patch_file}")
-    patch_content = create_patch(backup_files, dict(zip(modified_files, modified_files)), common_ancestor)
+    create_patch(backup_files, dict(zip(modified_files, modified_files)), common_ancestor, patch_file)
 
-    logging.info(f"Writing patch file: {patch_file}")
-    with open(patch_file, 'w') as f:
-        f.write(patch_content)
+    with open(patch_file, 'r') as f:
+        patch_content = f.read()
 
-    logging.info(f"Creating base64 encoded patch file: {base64_patch_file}")
     with open(base64_patch_file, 'w') as f:
         f.write(create_base64_patch(patch_content))
 
