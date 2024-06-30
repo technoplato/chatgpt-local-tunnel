@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List, Union, Tuple
 import argparse
 import hashlib
+import tempfile
 
 from typing_extensions import TypedDict
 
@@ -112,36 +113,24 @@ def create_backup(file_path: str) -> str:
     return backup_path
 
 
-def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], common_ancestor: str,
-                 patch_file: str) -> None:
+def create_patch(original_dir: str, updated_dir: str, patch_file: str) -> None:
     logging.info("Starting patch creation process")
     try:
-        for file_name in original_files:
-            original_path = original_files[file_name]
-            updated_path = updated_files[file_name]
-            relative_path = os.path.relpath(file_name, common_ancestor)
-            logging.debug(f"Creating patch for file: {file_name}")
-            logging.debug(f"Original path: {original_path}")
-            logging.debug(f"Updated path: {updated_path}")
-            logging.debug(f"Relative path: {relative_path}")
+        result = subprocess.run(['diff', '-ruN', original_dir, updated_dir],
+                                capture_output=True, text=True, check=False)
+        logging.debug(f"Diff command return code: {result.returncode}")
+        logging.debug(f"Diff command stdout: {result.stdout}")
+        logging.debug(f"Diff command stderr: {result.stderr}")
 
-            result = subprocess.run(['diff', '-u', original_path, updated_path],
-                                    capture_output=True, text=True, check=False)
-            logging.debug(f"Diff command return code: {result.returncode}")
-            logging.debug(f"Diff command stdout: {result.stdout}")
-            logging.debug(f"Diff command stderr: {result.stderr}")
-
-            if result.returncode == 1:
-                logging.info(f"Differences found in file: {file_name}")
-                with open(patch_file, 'a') as f:
-                    f.write(f"--- {relative_path}\n")
-                    f.write(f"+++ {relative_path}\n")
-                    f.write(result.stdout)
-                logging.info(f"Appended patch for {file_name} to {patch_file}")
-            elif result.returncode == 0:
-                logging.info(f"No differences found in file: {file_name}")
-            else:
-                logging.warning(f"Unexpected return code from diff command: {result.returncode}")
+        if result.returncode == 1:
+            logging.info("Differences found")
+            with open(patch_file, 'w') as f:
+                f.write(result.stdout)
+            logging.info(f"Patch file created: {patch_file}")
+        elif result.returncode == 0:
+            logging.info("No differences found")
+        else:
+            logging.warning(f"Unexpected return code from diff command: {result.returncode}")
 
     except FileNotFoundError:
         logging.error("Error: The 'diff' utility is not available on this system.")
@@ -160,84 +149,98 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     patch_file = os.path.join(common_ancestor, "changes.patch")
     base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
 
-    # Ensure the directory exists before creating the file
-    os.makedirs(os.path.dirname(patch_file), exist_ok=True)
-    open(patch_file, 'w').close()
+    # Create temporary directories for original and updated files
+    with tempfile.TemporaryDirectory() as original_temp_dir, tempfile.TemporaryDirectory() as updated_temp_dir:
+        for file_name, result in search_results.items():
+            logging.info(f"Processing file: {file_name}")
+            if "error" in result:
+                logging.warning(f"Error found for file: {file_name}")
+                continue
 
-    for file_name, result in search_results.items():
-        logging.info(f"Processing file: {file_name}")
-        if "error" in result:
-            logging.warning(f"Error found for file: {file_name}")
-            continue
+            if any(hunk["errors"] for hunk in result["hunks"]):
+                logging.warning(f"Errors found in hunks for file: {file_name}")
+                continue
 
-        if any(hunk["errors"] for hunk in result["hunks"]):
-            logging.warning(f"Errors found in hunks for file: {file_name}")
-            continue
+            # Create backup before making changes
+            backup_files[file_name] = create_backup(file_name)
+            logging.info(f"Backup created for file: {file_name}")
 
-        # Create backup before making changes
-        backup_filename = create_backup(file_name)
-        backup_files[file_name] = backup_filename
-        logging.info(f"Backup created for file: {file_name}")
+            # Copy original file to temporary directory
+            rel_path = os.path.relpath(file_name, common_ancestor)
+            original_temp_file = os.path.join(original_temp_dir, rel_path)
+            os.makedirs(os.path.dirname(original_temp_file), exist_ok=True)
+            shutil.copy2(backup_files[file_name], original_temp_file)
 
-        file_lines = updated_files[file_name].split('\n')
-        original_content = '\n'.join(file_lines)
-        changes_made = False
+            file_lines = updated_files[file_name].split('\n')
+            original_content = '\n'.join(file_lines)
+            changes_made = False
 
-        for hunk_index, hunk_result in enumerate(result["hunks"]):
-            logging.info(f"Processing hunk {hunk_index + 1} for file: {file_name}")
-            replacement_lines = replacements[file_name][hunk_index][0].split('\n')
-            start_line = hunk_result["matches"][0]["fileLineNum"] - 1
-            end_line = hunk_result["matches"][-1]["fileLineNum"]
+            for hunk_index, hunk_result in enumerate(result["hunks"]):
+                logging.info(f"Processing hunk {hunk_index + 1} for file: {file_name}")
+                replacement_lines = replacements[file_name][hunk_index][0].split('\n')
+                start_line = hunk_result["matches"][0]["fileLineNum"] - 1
+                end_line = hunk_result["matches"][-1]["fileLineNum"]
 
-            logging.debug(f"Original lines: {file_lines[start_line:end_line]}")
-            logging.debug(f"Replacement lines: {replacement_lines}")
+                logging.debug(f"Original lines: {file_lines[start_line:end_line]}")
+                logging.debug(f"Replacement lines: {replacement_lines}")
 
-            # Preserve indentation
-            if start_line > 0:
-                original_indent = len(file_lines[start_line]) - len(file_lines[start_line].lstrip())
-                replacement_lines = [' ' * original_indent + line for line in replacement_lines]
+                # Preserve indentation
+                if start_line > 0:
+                    original_indent = len(file_lines[start_line]) - len(file_lines[start_line].lstrip())
+                    replacement_lines = [' ' * original_indent + line for line in replacement_lines]
 
-            file_lines[start_line:end_line] = replacement_lines
-            changes_made = True
+                file_lines[start_line:end_line] = replacement_lines
+                changes_made = True
 
-        if changes_made:
-            logging.info(f"Changes made to file: {file_name}")
-            updated_content = '\n'.join(file_lines)
+            if changes_made:
+                logging.info(f"Changes made to file: {file_name}")
+                updated_content = '\n'.join(file_lines)
 
-            # Check if the content has actually changed
-            if original_content == updated_content:
-                logging.error(f"File content did not change after replacement: {file_name}")
-                raise AssertionError(f"File content did not change after replacement: {file_name}")
+                # Check if the content has actually changed
+                if original_content == updated_content:
+                    logging.error(f"File content did not change after replacement: {file_name}")
+                    raise AssertionError(f"File content did not change after replacement: {file_name}")
 
-            #             temp_path = file_name + '.tmp'
-            with open(file_name, 'w') as f:
-                f.write(updated_content)
-                f.flush()
-                os.fsync(f.fileno())
-            #             os.replace(temp_path, file_name)
-            updated_files[file_name] = updated_content
-            modified_files.append(file_name)
+                # Write updated content to temporary directory
+                updated_temp_file = os.path.join(updated_temp_dir, rel_path)
+                os.makedirs(os.path.dirname(updated_temp_file), exist_ok=True)
+                with open(updated_temp_file, 'w') as f:
+                    f.write(updated_content)
 
-            # Double-check that the file was actually modified
-            with open(file_name, 'r') as f:
-                current_content = f.read()
-            if current_content != updated_content:
-                logging.error(f"File content does not match expected content after writing: {file_name}")
-                raise AssertionError(f"File content does not match expected content after writing: {file_name}")
+                # Update the actual file
+                temp_path = file_name + '.tmp'
+                with open(temp_path, 'w') as f:
+                    f.write(updated_content)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(temp_path, file_name)
+                updated_files[file_name] = updated_content
+                modified_files.append(file_name)
 
-            logging.debug(f"Updated file content: {updated_files[file_name]}")
-            logging.info(f"File mtime after: {os.path.getmtime(file_name)}")
+                # Double-check that the file was actually modified
+                with open(file_name, 'r') as f:
+                    current_content = f.read()
+                if current_content != updated_content:
+                    logging.error(f"File content does not match expected content after writing: {file_name}")
+                    raise AssertionError(f"File content does not match expected content after writing: {file_name}")
+
+                logging.debug(f"Updated file content: {updated_files[file_name]}")
+                logging.info(f"File mtime after: {os.path.getmtime(file_name)}")
+            else:
+                logging.info(f"No changes made to file: {file_name}")
+
+        # Create patch file after all changes have been made
+        if modified_files:
+            logging.info(f"Creating patch file: {patch_file}")
+            create_patch(original_temp_dir, updated_temp_dir, patch_file)
+
+            with open(patch_file, 'r') as f:
+                patch_content = f.read()
+
+            with open(base64_patch_file, 'w') as f:
+                f.write(create_base64_patch(patch_content))
         else:
-            logging.info(f"No changes made to file: {file_name}")
-
-    logging.info(f"Creating patch file: {patch_file}")
-    create_patch(backup_files, dict(zip(modified_files, modified_files)), common_ancestor, patch_file)
-
-    with open(patch_file, 'r') as f:
-        patch_content = f.read()
-
-    with open(base64_patch_file, 'w') as f:
-        f.write(create_base64_patch(patch_content))
+            logging.info("No files were modified. Patch file not created.")
 
     logging.info("replace_hunks_in_files function completed")
     return search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor
@@ -371,8 +374,11 @@ def main():
                 raise AssertionError("File content does not match expected content after writing.")
 
             print(f"Replacement successful. Original file backed up to: {backup_files[args.file_path]}")
-            print(f"Patch file created: {patch_file}")
-            print(f"Base64 encoded patch file created: {base64_patch_file}")
+            if os.path.exists(patch_file):
+                print(f"Patch file created: {patch_file}")
+                print(f"Base64 encoded patch file created: {base64_patch_file}")
+            else:
+                print("No patch file created as no changes were made.")
             print(f"Common ancestor directory: {common_ancestor}")
             print(json.dumps(search_results, indent=2))
     else:

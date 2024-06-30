@@ -1,14 +1,12 @@
---- main.rs
-+++ main.rs
---- /Users/laptop/Development/Personal/Public/GPTs/chatgpt-local-tunnel/claude/python/main.old.rs	2024-06-30 13:01:37
-+++ /Users/laptop/Development/Personal/Public/GPTs/chatgpt-local-tunnel/claude/python/main.rs	2024-06-30 13:01:37
+diff -ruN /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpgxtr9lyl/main.rs /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpob954d9g/main.rs
+--- /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpgxtr9lyl/main.rs	2024-06-30 13:16:50
++++ /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpob954d9g/main.rs	2024-06-30 13:16:50
 @@ -1,7 +1,7 @@
  // Main function
  use std::collections::HashMap;
-
+ 
 -fn main() {
 +fn modified_main() {
      let mut map = HashMap::new();
      map.insert("key1", "value1");
      map.insert("key2", "value2");
-\ No newline at end of file
