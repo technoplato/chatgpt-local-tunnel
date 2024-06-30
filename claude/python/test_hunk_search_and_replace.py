@@ -50,21 +50,8 @@ pub fn subtract(a: i32, b: i32) -> i32 {
                 f.write(content)
 
     def tearDown(self):
-        pass
-
-    #         for file_name in self.test_files:
-    #             file_path = os.path.join(self.test_dir, file_name)
-    #             if os.path.exists(file_path):
-    #                 os.remove(file_path)
-    #             backup_path = f"{file_path}.old"
-    #             if os.path.exists(backup_path):
-    #                 os.remove(backup_path)
-    #         patch_file = os.path.join(self.test_dir, "changes.patch")
-    #         if os.path.exists(patch_file):
-    #             os.remove(patch_file)
-    #         base64_patch_file = os.path.join(self.test_dir, "changes.patch.b64")
-    #         if os.path.exists(base64_patch_file):
-    #             os.remove(base64_patch_file)
+        if os.path.exists(self.project_root):
+            shutil.rmtree(self.project_root)
 
     def print_diff_command(self, original_file, updated_file):
         print(f"\nDiff command to run manually:")
@@ -148,36 +135,38 @@ fn main() {
         search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(
             searches, replacements, {file_path: read_file(file_path)})
 
-        self.assertEqual(updated_files[file_path],
-                         self.test_files[os.path.join('src', 'utils', 'math.rs')])  # No changes should be made
+        self.assertEqual(updated_files[file_path], self.test_files[os.path.join('src', 'utils', 'math.rs')])  # No changes should be made
         self.assertEqual(search_results[file_path]["hunks"][0]["matchPercentage"], 0)
         self.assertGreater(len(search_results[file_path]["hunks"][0]["errors"]), 0)
         self.assertEqual(backup_files, {})  # No backup should be created
 
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main_function_replace_with_backup(self, mock_stdout):
+    def test_main_function_replace_with_backup_multiple_files(self, mock_stdout):
         print("\n--- Debug Output Start ---")
 
         main_file = os.path.join(self.project_root, 'src', 'main.rs')
         math_file = os.path.join(self.project_root, 'src', 'utils', 'math.rs')
 
-        searches = {
-            main_file: [["fn main() {"]],
-            math_file: [["pub fn add(a: i32, b: i32) -> i32 {"]]
-        }
-
-        replacements = {
-            main_file: [["fn modified_main() {"]],
-            math_file: [["pub fn add(a: i32, b: i32) -> i32 {\n    // New comment"]]
-        }
-
-        sys.argv = ['hunk_search_and_replace.py', main_file, "fn main() {", '--replace', "fn modified_main() {"]
-        sys.argv.extend([math_file, "pub fn add(a: i32, b: i32) -> i32 {", '--replace',
-                         "pub fn add(a: i32, b: i32) -> i32 {\n    // New comment"])
+        sys.argv = ['hunk_search_and_replace.py',
+                    '-f', main_file,
+                    '-s', """fn main() {
+        let mut map = HashMap::new();
+        map.insert("key1", "value1");""",
+                    '-r', """fn modified_main() {
+        let mut modified_map = HashMap::new();
+        modified_map.insert("key1", "new_value1");""",
+                    '-f', math_file,
+                    '-s', """pub fn add(a: i32, b: i32) -> i32 {
+        a + b
+    }""",
+                    '-r', """pub fn add(a: i32, b: i32) -> i32 {
+        // New comment
+        let result = a + b;
+        result
+    }"""]
 
         print(f"Test files: {main_file}, {math_file}")
-        print(f"Search hunks: {searches}")
-        print(f"Replacement hunks: {replacements}")
+        print(f"Command line arguments: {sys.argv}")
 
         # Print original file contents
         for file_path in [main_file, math_file]:
@@ -225,7 +214,18 @@ fn main() {
         self.assertIn("Patch file created:", output)
         self.assertIn("Base64 encoded patch file created:", output)
         self.assertIn("Common ancestor directory:", output)
-        self.assertIn("fn modified_main() {", updated_content)
+
+        with open(main_file, 'r') as f:
+            main_content = f.read()
+        with open(math_file, 'r') as f:
+            math_content = f.read()
+
+        self.assertIn("fn modified_main() {", main_content)
+        self.assertIn("let mut modified_map = HashMap::new();", main_content)
+        self.assertIn("modified_map.insert(\"key1\", \"new_value1\");", main_content)
+        self.assertIn("// New comment", math_content)
+        self.assertIn("let result = a + b;", math_content)
+        self.assertIn("result", math_content)
 
         self.assertTrue(os.path.exists(patch_file_path), "Patch file should exist")
         self.assertNotEqual(patch_content, "", "Patch content should not be empty")
@@ -233,9 +233,15 @@ fn main() {
         self.assertIn("+++ src/main.rs", patch_content)
         self.assertIn("-fn main() {", patch_content)
         self.assertIn("+fn modified_main() {", patch_content)
+        self.assertIn("-    let mut map = HashMap::new();", patch_content)
+        self.assertIn("+    let mut modified_map = HashMap::new();", patch_content)
+        self.assertIn("-    map.insert(\"key1\", \"value1\");", patch_content)
+        self.assertIn("+    modified_map.insert(\"key1\", \"new_value1\");", patch_content)
         self.assertIn("--- src/utils/math.rs", patch_content)
         self.assertIn("+++ src/utils/math.rs", patch_content)
         self.assertIn("+    // New comment", patch_content)
+        self.assertIn("+    let result = a + b;", patch_content)
+        self.assertIn("+    result", patch_content)
 
         self.print_diff_command(f"{main_file}.old", main_file)
         self.print_diff_command(f"{math_file}.old", math_file)
