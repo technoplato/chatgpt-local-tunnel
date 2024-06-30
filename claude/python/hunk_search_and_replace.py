@@ -64,12 +64,12 @@ def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: Fi
     """
     results: SearchResult = {}
 
-    for file_name, hunks in searches.items():
+    for file_name, file_hunks in searches.items():
         logging.debug(f"Processing file: {file_name}")
         if file_name not in file_system:
             results[file_name] = {
                 "error": f'File "{file_name}" not found in the file system.',
-                "hunks": [{"hunkLines": len(hunk[0].split('\n')), "matchPercentage": 0} for hunk in hunks]
+                "hunks": [{"hunkLines": len(hunk[0].split('\n')), "matchPercentage": 0} for hunk in file_hunks]
             }
             continue
 
@@ -82,7 +82,7 @@ def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: Fi
             "hunks": []
         }
 
-        for hunk_index, hunk in enumerate(hunks):
+        for hunk_index, hunk in enumerate(file_hunks):
             logging.debug(f"Processing hunk {hunk_index + 1} for file: {file_name}")
             hunk_lines = [line for line in hunk[0].split('\n') if line.strip()]
             hunk_result: HunkResult = {
@@ -400,6 +400,50 @@ def write_file(file_path: str, content: str) -> None:
         raise AssertionError(f"File content does not match expected content after writing: {file_path}")
 
 
+def parse_arguments(args: List[str] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Search for hunks in files and optionally replace them, creating backups and patch files.")
+    parser.add_argument("-f", "--file", action='append', required=True, help="Path to the file to search in")
+    parser.add_argument("-s", "--search", action='append', required=True, help="Hunk to search for")
+    parser.add_argument("-r", "--replace", action='append', help="Hunk to replace with")
+
+    # Pre-process args to remove script name and any other unexpected arguments
+    if args is not None:
+        processed_args = []
+        skip_next = False
+        for i, arg in enumerate(args):
+            if skip_next:
+                skip_next = False
+                continue
+            if arg.startswith('-'):
+                processed_args.append(arg)
+                if i + 1 < len(args) and not args[i + 1].startswith('-'):
+                    processed_args.append(args[i + 1])
+                    skip_next = True
+        args = processed_args
+
+    parsed_args = parser.parse_args(args)
+
+    # Construct searches and replacements dictionaries
+    searches: Dict[str, List[List[str]]] = {}
+    replacements: Dict[str, List[List[str]]] = {}
+
+    for i, file_path in enumerate(parsed_args.file):
+        if file_path not in searches:
+            searches[file_path] = []
+        if file_path not in replacements:
+            replacements[file_path] = []
+
+        searches[file_path].append([parsed_args.search[i]])
+        if parsed_args.replace and i < len(parsed_args.replace):
+            replacements[file_path].append([parsed_args.replace[i]])
+
+    parsed_args.searches = searches
+    parsed_args.replacements = replacements
+
+    return parsed_args
+
+
 def main():
     """
     Search for hunks in files and optionally replace them, creating backups of original files and generating patch files.
@@ -426,12 +470,7 @@ def main():
     Note: When using multi-line hunks, be careful with indentation and newline characters.
     In some shells, you may need to escape newlines with backslashes for multi-line input.
     """
-    parser = argparse.ArgumentParser(
-        description="Search for hunks in files and optionally replace them, creating backups and patch files.")
-    parser.add_argument("-f", "--file", action='append', required=True, help="Path to the file to search in")
-    parser.add_argument("-s", "--search", action='append', required=True, help="Hunk to search for")
-    parser.add_argument("-r", "--replace", action='append', help="Hunk to replace with")
-    args = parser.parse_args()
+    args = parse_arguments()
 
     if args.replace and len(args.replace) != len(args.search):
         print("Error: The number of replacement hunks must match the number of search hunks.")
