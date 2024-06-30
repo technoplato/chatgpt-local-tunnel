@@ -4,8 +4,12 @@ import json
 import shutil
 import base64
 import subprocess
+import logging
 from typing import Dict, List, Union, TypedDict, Tuple
 import argparse
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Type definitions
 FileSystem = Dict[str, str]
@@ -95,35 +99,39 @@ def create_backup(file_path: str) -> str:
     return backup_path
 
 def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], common_ancestor: str) -> str:
+    logging.info("Starting patch creation process")
     try:
         patch_content = ""
         for file_name in original_files:
             original_path = original_files[file_name]
             updated_path = updated_files[file_name]
             relative_path = os.path.relpath(file_name, common_ancestor)
+            logging.debug(f"Creating patch for file: {file_name}")
+            logging.debug(f"Original path: {original_path}")
+            logging.debug(f"Updated path: {updated_path}")
+            logging.debug(f"Relative path: {relative_path}")
+
             result = subprocess.run(['diff', '-u', original_path, updated_path],
                                     capture_output=True, text=True, check=False)
+            logging.debug(f"Diff command return code: {result.returncode}")
+            logging.debug(f"Diff command stdout: {result.stdout}")
+            logging.debug(f"Diff command stderr: {result.stderr}")
+
             if result.returncode <= 1:  # 0 means no differences, 1 means differences found
-                patch_content += f"--- a/{relative_path}\n"
-                patch_content += f"+++ b/{relative_path}\n"
+                logging.info(f"Differences found in file: {file_name}")
+                # Include the entire diff output, including headers
                 patch_content += result.stdout
+            else:
+                logging.warning(f"Unexpected return code from diff command: {result.returncode}")
+
+        logging.info(f"Patch creation completed. Patch content length: {len(patch_content)}")
         return patch_content
     except FileNotFoundError:
-        print("Error: The 'diff' utility is not available on this system.")
+        logging.error("Error: The 'diff' utility is not available on this system.")
         return ""
-
-def create_base64_patch(patch_content: str) -> str:
-    return base64.b64encode(patch_content.encode()).decode()
-
-def find_common_ancestor(file_paths: List[str]) -> str:
-    if not file_paths:
-        return ""
-    common_path = os.path.commonpath(file_paths)
-    while common_path and not os.path.isdir(common_path):
-        common_path = os.path.dirname(common_path)
-    return common_path
 
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
+    logging.info("Starting replace_hunks_in_files function")
     search_results = compare_hunks_to_files(searches, file_system)
     updated_files = file_system.copy()
     backup_files = {}
@@ -131,6 +139,7 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
 
     for file_name, result in search_results.items():
         if "error" in result or any(hunk["errors"] for hunk in result["hunks"]):
+            logging.warning(f"Errors found for file: {file_name}")
             continue
 
         file_lines = updated_files[file_name].split('\n')
@@ -150,6 +159,7 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
             changes_made = True
 
         if changes_made:
+            logging.info(f"Changes made to file: {file_name}")
             backup_files[file_name] = create_backup(file_name)
             updated_files[file_name] = '\n'.join(file_lines)
             modified_files.append(file_name)
@@ -158,15 +168,30 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     patch_file = os.path.join(common_ancestor, "changes.patch")
     base64_patch_file = os.path.join(common_ancestor, "changes.patch.b64")
 
+    logging.info(f"Creating patch file: {patch_file}")
     patch_content = create_patch(backup_files, dict(zip(modified_files, modified_files)), common_ancestor)
 
+    logging.info(f"Writing patch file: {patch_file}")
     with open(patch_file, 'w') as f:
         f.write(patch_content)
 
+    logging.info(f"Creating base64 encoded patch file: {base64_patch_file}")
     with open(base64_patch_file, 'w') as f:
         f.write(create_base64_patch(patch_content))
 
+    logging.info("replace_hunks_in_files function completed")
     return search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor
+
+def create_base64_patch(patch_content: str) -> str:
+    return base64.b64encode(patch_content.encode()).decode()
+
+def find_common_ancestor(file_paths: List[str]) -> str:
+    if not file_paths:
+        return ""
+    common_path = os.path.commonpath(file_paths)
+    while common_path and not os.path.isdir(common_path):
+        common_path = os.path.dirname(common_path)
+    return common_path
 
 def read_file(file_path: str) -> str:
     with open(file_path, 'r') as f:
