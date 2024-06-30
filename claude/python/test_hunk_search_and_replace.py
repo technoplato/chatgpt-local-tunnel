@@ -8,7 +8,7 @@ from unittest.mock import patch, mock_open
 # Add the directory containing the script to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from hunk_search import compare_hunks_to_files, replace_hunks_in_files, read_file, write_file
+from hunk_search_and_replace import compare_hunks_to_files, replace_hunks_in_files, read_file, write_file
 
 class TestHunkSearch(unittest.TestCase):
     def setUp(self):
@@ -154,9 +154,9 @@ fn main() {
     def test_main_function_search(self, mock_stdout):
         test_file = os.path.join(self.test_dir, 'main.rs')
         test_hunk = "fn main() {"
-        sys.argv = ['hunk_search.py', test_file, test_hunk]
+        sys.argv = ['hunk_search_and_replace.py', test_file, test_hunk]
 
-        from hunk_search import main
+        from hunk_search_and_replace import main
         main()
 
         output = mock_stdout.getvalue()
@@ -166,14 +166,14 @@ fn main() {
         self.assertEqual(result[test_file]['hunks'][0]['matches'][0]['content'], "fn main() {")
 
     @patch('sys.stdout', new_callable=StringIO)
-    @patch('hunk_search.write_file')
+    @patch('hunk_search_and_replace.write_file')
     def test_main_function_replace(self, mock_write_file, mock_stdout):
         test_file = os.path.join(self.test_dir, 'main.rs')
         test_hunk = "fn main() {"
         replacement_hunk = "fn modified_main() {"
-        sys.argv = ['hunk_search.py', test_file, test_hunk, '--replace', replacement_hunk]
+        sys.argv = ['hunk_search_and_replace.py', test_file, test_hunk, '--replace', replacement_hunk]
 
-        from hunk_search import main
+        from hunk_search_and_replace import main
         main()
 
         output = mock_stdout.getvalue()
