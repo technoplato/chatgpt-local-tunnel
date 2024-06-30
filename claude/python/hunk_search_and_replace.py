@@ -145,6 +145,10 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
             logging.warning(f"Errors found for file: {file_name}")
             continue
 
+        # Create backup before making changes
+        backup_files[file_name] = create_backup(file_name)
+        logging.info(f"Backup created for file: {file_name}")
+
         file_lines = updated_files[file_name].split('\n')
         changes_made = False
 
@@ -167,7 +171,6 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
 
         if changes_made:
             logging.info(f"Changes made to file: {file_name}")
-            backup_files[file_name] = create_backup(file_name)
             updated_files[file_name] = '\n'.join(file_lines)
             modified_files.append(file_name)
             logging.debug(f"Updated file content: {updated_files[file_name]}")
