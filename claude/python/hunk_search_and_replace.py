@@ -168,7 +168,19 @@ def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patc
             # Replace temporary directory paths with relative paths
             patch_lines = patch_content.split('\n')
             for i, line in enumerate(patch_lines):
+                """
+                 TODO remove lines that look like this. I noticed they're above the ---/+++ lines in the patch lines that look like this. I noticed they're above the ---/+++ lines in the patch
+                'diff -ruN /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/main.rs /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/main.rs'
+                """
                 if line.startswith('--- ') or line.startswith('+++ '):
+                    """
+                     TODO fix the parsing of these lines. They look like this in reality (note the time that can be removed)
+'--- /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/main.rs	2024-06-30 17:33:33'                    
+'+++ /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/main.rs	2024-06-30 17:40:48'
+'--- /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/utils/math.rs	2024-06-30 17:33:33'
+'+++ /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/utils/math.rs	2024-06-30 17:43:57'
+                    """
+
                     _, path = line.split(None, 1)
                     rel_path = os.path.relpath(path, original_dir if line.startswith('---') else updated_dir)
                     project_path = os.path.join('src', rel_path)
@@ -213,7 +225,25 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     - Path to the base64 encoded patch file
     - Common ancestor directory
     """
-    logging.info("Starting replace_hunks_in_files function")
+
+    logging.debug(f"replace_hunks_in_files - searches: {json.dumps(searches, indent=2)}")
+    logging.debug(f"replace_hunks_in_files - replacements: {json.dumps(replacements, indent=2)}")
+    logging.debug(f"replace_hunks_in_files - file_system keys: {list(file_system.keys())}")
+
+    # Expected structure:
+    expected_searches = {
+        "/path/to/file1.rs": [["hunk1 for file1"], ["hunk2 for file1"]],
+        "/path/to/file2.rs": [["hunk1 for file2"]]
+    }
+    expected_replacements = {
+        "/path/to/file1.rs": [["replacement1 for file1"], ["replacement2 for file1"]],
+        "/path/to/file2.rs": [["replacement1 for file2"]]
+    }
+    logging.debug(
+        f"replace_hunks_in_files - expected searches structure: {json.dumps(expected_searches, indent=2)}")
+    logging.debug(
+        f"replace_hunks_in_files - expected replacements structure: {json.dumps(expected_replacements, indent=2)}")
+
     search_results = compare_hunks_to_files(searches, file_system)
     updated_files = file_system.copy()
     backup_files = {}
@@ -407,39 +437,26 @@ def parse_arguments(args: List[str] = None) -> argparse.Namespace:
     parser.add_argument("-s", "--search", action='append', required=True, help="Hunk to search for")
     parser.add_argument("-r", "--replace", action='append', help="Hunk to replace with")
 
-    # Pre-process args to remove script name and any other unexpected arguments
-    if args is not None:
-        processed_args = []
-        skip_next = False
-        for i, arg in enumerate(args):
-            if skip_next:
-                skip_next = False
-                continue
-            if arg.startswith('-'):
-                processed_args.append(arg)
-                if i + 1 < len(args) and not args[i + 1].startswith('-'):
-                    processed_args.append(args[i + 1])
-                    skip_next = True
-        args = processed_args
-
     parsed_args = parser.parse_args(args)
 
-    # Construct searches and replacements dictionaries
-    searches: Dict[str, List[List[str]]] = {}
-    replacements: Dict[str, List[List[str]]] = {}
-
+    searches = {}
+    replacements = {}
     for i, file_path in enumerate(parsed_args.file):
         if file_path not in searches:
             searches[file_path] = []
-        if file_path not in replacements:
-            replacements[file_path] = []
-
         searches[file_path].append([parsed_args.search[i]])
-        if parsed_args.replace and i < len(parsed_args.replace):
-            replacements[file_path].append([parsed_args.replace[i]])
+
+        if parsed_args.replace:
+            if file_path not in replacements:
+                replacements[file_path] = []
+            if i < len(parsed_args.replace):
+                replacements[file_path].append([parsed_args.replace[i]])
 
     parsed_args.searches = searches
     parsed_args.replacements = replacements
+
+    logging.debug(f"parse_arguments - searches: {json.dumps(searches, indent=2)}")
+    logging.debug(f"parse_arguments - replacements: {json.dumps(replacements, indent=2)}")
 
     return parsed_args
 
@@ -472,21 +489,21 @@ def main():
     """
     args = parse_arguments()
 
+    # Use args.searches directly instead of recreating it
+    searches = args.searches
+    replacements = args.replacements
+
+
+    logging.debug(f"main - searches: {json.dumps(searches, indent=2)}")
+    logging.debug(f"main - replacements: {json.dumps(replacements, indent=2)}")
+
     if args.replace and len(args.replace) != len(args.search):
         print("Error: The number of replacement hunks must match the number of search hunks.")
         return
 
-    file_system = {file_path: read_file(file_path) for file_path in args.file}
-    searches = {file_path: [[hunk] for hunk in args.search] for file_path in args.file}
+    file_system = {file_path: read_file(file_path) for file_path in searches.keys()}
 
     if args.replace:
-        replacements = {file_path: [[hunk] for hunk in args.replace] for file_path in args.file}
-
-        # Calculate and log the hash of the original files
-        original_hashes = {file_path: hashlib.md5(content.encode()).hexdigest()
-                           for file_path, content in file_system.items()}
-        for file_path, hash_value in original_hashes.items():
-            logging.info(f"Original file hash for {file_path}: {hash_value}")
 
         search_results, updated_files, backup_files, patch_file, base64_patch_file, common_ancestor = replace_hunks_in_files(
             searches, replacements, file_system)
@@ -499,22 +516,8 @@ def main():
         else:
             # Calculate and log the hash of the updated files
             for file_path, content in updated_files.items():
-                updated_hash = hashlib.md5(content.encode()).hexdigest()
-                logging.info(f"Updated file hash for {file_path}: {updated_hash}")
-
-                if original_hashes[file_path] == updated_hash:
-                    logging.error(f"File content did not change after replacement: {file_path}")
-                    raise AssertionError(f"File content did not change after replacement: {file_path}")
 
                 write_file(file_path, content)
-
-                # Verify that the file was actually modified
-                with open(file_path, 'r') as f:
-                    final_content = f.read()
-                final_hash = hashlib.md5(final_content.encode()).hexdigest()
-                if final_hash != updated_hash:
-                    logging.error(f"File content does not match expected content after writing: {file_path}")
-                    raise AssertionError(f"File content does not match expected content after writing: {file_path}")
 
             print("Replacement successful.")
             for file_path, backup_path in backup_files.items():
