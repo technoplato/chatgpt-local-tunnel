@@ -1,5 +1,42 @@
+"""
+Search for hunks in files and optionally replace them, creating backups of original files and generating patch files.
+
+This script orchestrates the entire process of searching and replacing content in files.
+It handles command-line arguments, performs the replacements, and manages the creation of
+backup and patch files. This function is designed to be the entry point of the script when
+run from the command line.
+
+Usage examples:
+1. Search for hunks in a single file:
+   python hunk_search_and_replace.py -f path/to/file.txt -s "search hunk"
+
+2. Search and replace in multiple files:
+   python hunk_search_and_replace.py -f file1.txt -s "search1" -r "replace1" -f file2.txt -s "search2" -r "replace2"
+
+3. Search and replace with multi-line hunks:
+   python hunk_search_and_replace.py -f file.txt -s "def example_function():
+       print('Hello, World!')
+       return None" -r "def new_function():
+       print('Hello, Universe!')
+       return True"
+
+4. Search and replace multiple lines in multiple files:
+   python hunk_search_and_replace.py \
+   -f file1.py -s "def old_function1():
+       print('Old message 1')
+       return False" -r "def new_function1():
+       print('New message 1')
+       return True" \
+   -f file2.py -s "class OldClass:
+       def __init__(self):
+           self.value = 0" -r "class NewClass:
+       def __init__(self):
+           self.value = 1"
+
+Note: When using multi-line hunks, be careful with indentation and newline characters.
+In some shells, you may need to escape newlines with backslashes for multi-line input.
+"""
 import os
-import sys
 import json
 import shutil
 import base64
@@ -7,7 +44,6 @@ import subprocess
 import logging
 from typing import Dict, List, Union, Tuple
 import argparse
-import hashlib
 import tempfile
 
 from typing_extensions import TypedDict
@@ -168,19 +204,7 @@ def create_patch(original_dir: str, updated_dir: str, common_ancestor: str, patc
             # Replace temporary directory paths with relative paths
             patch_lines = patch_content.split('\n')
             for i, line in enumerate(patch_lines):
-                """
-                 TODO remove lines that look like this. I noticed they're above the ---/+++ lines in the patch lines that look like this. I noticed they're above the ---/+++ lines in the patch
-                'diff -ruN /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/main.rs /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/main.rs'
-                """
                 if line.startswith('--- ') or line.startswith('+++ '):
-                    """
-                     TODO fix the parsing of these lines. They look like this in reality (note the time that can be removed)
-'--- /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/main.rs	2024-06-30 17:33:33'                    
-'+++ /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/main.rs	2024-06-30 17:40:48'
-'--- /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpi6f1tsam/utils/math.rs	2024-06-30 17:33:33'
-'+++ /var/folders/2d/5pqypl0x3px_4z4pbqxwczk80000gn/T/tmpqdt51hm9/utils/math.rs	2024-06-30 17:43:57'
-                    """
-
                     _, path = line.split(None, 1)
                     rel_path = os.path.relpath(path, original_dir if line.startswith('---') else updated_dir)
                     project_path = os.path.join('src', rel_path)
@@ -462,31 +486,6 @@ def parse_arguments(args: List[str] = None) -> argparse.Namespace:
 
 
 def main():
-    """
-    Search for hunks in files and optionally replace them, creating backups of original files and generating patch files.
-
-    This main function orchestrates the entire process of searching and replacing content in files.
-    It handles command-line arguments, performs the replacements, and manages the creation of
-    backup and patch files. This function is designed to be the entry point of the script when
-    run from the command line.
-
-    Usage examples:
-    1. Search for hunks in a single file:
-       python hunk_search_and_replace.py -f path/to/file.txt -s "search hunk"
-
-    2. Search and replace in multiple files:
-       python hunk_search_and_replace.py -f file1.txt -s "search1" -r "replace1" -f file2.txt -s "search2" -r "replace2"
-
-    3. Search and replace with multi-line hunks:
-       python hunk_search_and_replace.py -f file.txt -s "def example_function():
-           print('Hello, World!')
-           return None" -r "def new_function():
-           print('Hello, Universe!')
-           return True"
-
-    Note: When using multi-line hunks, be careful with indentation and newline characters.
-    In some shells, you may need to escape newlines with backslashes for multi-line input.
-    """
     args = parse_arguments()
 
     # Use args.searches directly instead of recreating it
