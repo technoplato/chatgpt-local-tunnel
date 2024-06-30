@@ -121,6 +121,51 @@ def write_file(file_path: str, content: str) -> None:
         f.write(content)
 
 def main():
+    """
+    Search for hunks in files and optionally replace them.
+
+    Demo Usage:
+    1. Search for a hunk:
+       python hunk_search.py path/to/file.txt "search hunk"
+
+    2. Search for multiple hunks:
+       python hunk_search.py path/to/file.txt "search hunk 1" "search hunk 2"
+
+    3. Search and replace a single hunk:
+       python hunk_search.py path/to/file.txt "search hunk" --replace "replacement hunk"
+
+    4. Search and replace multiple hunks:
+       python hunk_search.py path/to/file.txt "search hunk 1" "search hunk 2" --replace "replacement 1" "replacement 2"
+
+    5. Search for a multi-line hunk:
+       python hunk_search.py path/to/file.txt "def example_function():
+           print('Hello, World!')
+           return None"
+
+    6. Replace with a multi-line hunk:
+       python hunk_search.py path/to/file.txt "def example_function():" --replace "def new_function():
+           print('Hello, Universe!')
+           return True"
+
+    7. Replace multiple multi-line hunks:
+       python hunk_search.py path/to/file.txt "def function1():
+       print('First function')
+       return None" "def function2():
+       print('Second function')
+       return False" --replace "def new_function1():
+       print('New first function')
+       return True" "def new_function2():
+       print('New second function')
+       return True"
+
+    Note: When using multi-line hunks, enclose them in quotes and be careful with indentation.
+    In some shells, you may need to escape newlines with backslashes for multi-line input.
+
+    Example with escaped newlines:
+    python hunk_search.py path/to/file.txt "def function1():\n    print('First function')\n    return None" \
+    --replace "def new_function1():\n    print('New first function')\n    return True"
+
+    """
     parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them.")
     parser.add_argument("file_path", help="Path to the file to search in")
     parser.add_argument("search_hunks", nargs="+", help="Hunks to search for")
