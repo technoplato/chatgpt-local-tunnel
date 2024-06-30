@@ -101,6 +101,11 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
             start_line = hunk_result["matches"][0]["fileLineNum"] - 1
             end_line = hunk_result["matches"][-1]["fileLineNum"]
 
+            # Preserve indentation
+            if start_line > 0:
+                original_indent = len(file_lines[start_line]) - len(file_lines[start_line].lstrip())
+                replacement_lines = [' ' * original_indent + line for line in replacement_lines]
+
             file_lines[start_line:end_line] = replacement_lines
 
         updated_files[file_name] = '\n'.join(file_lines)
