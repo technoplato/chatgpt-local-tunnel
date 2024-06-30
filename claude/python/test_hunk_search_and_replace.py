@@ -170,52 +170,33 @@ fn main() {
         print("\nUpdated file content:")
         print(updated_content)
 
-        # Extract and print information about created files
-        backup_file = None
-        patch_file = None
-        base64_patch_file = None
-        common_ancestor = None
-
-        for line in output.split('\n'):
-            if "Original file backed up to:" in line:
-                backup_file = line.split(": ")[1].strip()
-            elif "Patch file created:" in line:
-                patch_file = line.split(": ")[1].strip()
-            elif "Base64 encoded patch file created:" in line:
-                base64_patch_file = line.split(": ")[1].strip()
-            elif "Common ancestor directory:" in line:
-                common_ancestor = line.split(": ")[1].strip()
-
-        print(f"\nBackup file: {backup_file}")
-        print(f"Patch file: {patch_file}")
-        print(f"Base64 patch file: {base64_patch_file}")
-        print(f"Common ancestor directory: {common_ancestor}")
-
-        # Print content of created files
-        if backup_file and os.path.exists(backup_file):
-            with open(backup_file, 'r') as f:
-                print("\nBackup file content:")
-                print(f.read())
-        else:
-            print("\nBackup file does not exist")
-
-        if patch_file and os.path.exists(patch_file):
-            with open(patch_file, 'r') as f:
-                patch_content = f.read()
-                print("\nPatch file content:")
-                print(patch_content)
-        else:
-            print("\nPatch file does not exist")
-            patch_content = ""
         # Check if the file content has actually changed
-        self.assertNotEqual(original_content, updated_content, "File content should have changed")
+        content_changed = original_content != updated_content
+        print(f"\nFile content changed: {content_changed}")
+        if not content_changed:
+            print("Original content:")
+            print(repr(original_content))
+            print("Updated content:")
+            print(repr(updated_content))
 
-        if base64_patch_file and os.path.exists(base64_patch_file):
-            with open(base64_patch_file, 'r') as f:
-                print("\nBase64 patch file content:")
-                print(f.read())
+        self.assertTrue(content_changed, "File content should have changed")
+
+        # Extract the patch file path from the output
+        patch_file_line = next((line for line in output.split('\n') if "Patch file created:" in line), None)
+        if patch_file_line:
+            patch_file_path = patch_file_line.split(": ")[1].strip()
+            print(f"\nPatch file path: {patch_file_path}")
+            if os.path.exists(patch_file_path):
+                with open(patch_file_path, 'r') as f:
+                    patch_content = f.read()
+                print("Patch file content:")
+                print(patch_content)
+            else:
+                print("Patch file does not exist")
+                patch_content = ""
         else:
-            print("\nBase64 patch file does not exist")
+            print("Patch file path not found in output")
+            patch_content = ""
 
         print("--- Debug Output End ---\n")
 
@@ -227,13 +208,12 @@ fn main() {
         self.assertIn("Common ancestor directory:", output)
         self.assertIn("fn modified_main() {", updated_content)
 
-        if patch_file:
-            self.assertTrue(os.path.exists(patch_file), "Patch file should exist")
-            self.assertNotEqual(patch_content, "", "Patch content should not be empty")
-            self.assertIn("--- ", patch_content)
-            self.assertIn("+++ ", patch_content)
-            self.assertIn("-fn main() {", patch_content)
-            self.assertIn("+fn modified_main() {", patch_content)
+        self.assertTrue(os.path.exists(patch_file_path), "Patch file should exist")
+        self.assertNotEqual(patch_content, "", "Patch content should not be empty")
+        self.assertIn("--- ", patch_content)
+        self.assertIn("+++ ", patch_content)
+        self.assertIn("-fn main() {", patch_content)
+        self.assertIn("+fn modified_main() {", patch_content)
 
     def test_create_patch(self):
         file_path = os.path.join(self.temp_dir, 'test.txt')

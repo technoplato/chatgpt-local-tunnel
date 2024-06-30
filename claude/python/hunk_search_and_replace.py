@@ -131,7 +131,7 @@ def create_patch(original_files: Dict[str, str], updated_files: Dict[str, str], 
     except FileNotFoundError:
         logging.error("Error: The 'diff' utility is not available on this system.")
         return ""
-        
+
 def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str], Dict[str, str], str, str, str]:
     logging.info("Starting replace_hunks_in_files function")
     search_results = compare_hunks_to_files(searches, file_system)
@@ -140,6 +140,7 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
     modified_files = []
 
     for file_name, result in search_results.items():
+        logging.info(f"Processing file: {file_name}")
         if "error" in result or any(hunk["errors"] for hunk in result["hunks"]):
             logging.warning(f"Errors found for file: {file_name}")
             continue
@@ -148,9 +149,13 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
         changes_made = False
 
         for hunk_index, hunk_result in enumerate(result["hunks"]):
+            logging.info(f"Processing hunk {hunk_index + 1} for file: {file_name}")
             replacement_lines = replacements[file_name][hunk_index][0].split('\n')
             start_line = hunk_result["matches"][0]["fileLineNum"] - 1
             end_line = hunk_result["matches"][-1]["fileLineNum"]
+
+            logging.debug(f"Original lines: {file_lines[start_line:end_line]}")
+            logging.debug(f"Replacement lines: {replacement_lines}")
 
             # Preserve indentation
             if start_line > 0:
@@ -165,6 +170,9 @@ def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: D
             backup_files[file_name] = create_backup(file_name)
             updated_files[file_name] = '\n'.join(file_lines)
             modified_files.append(file_name)
+            logging.debug(f"Updated file content: {updated_files[file_name]}")
+        else:
+            logging.info(f"No changes made to file: {file_name}")
 
     common_ancestor = find_common_ancestor(modified_files)
     patch_file = os.path.join(common_ancestor, "changes.patch")
