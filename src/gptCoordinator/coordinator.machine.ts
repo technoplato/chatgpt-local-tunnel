@@ -104,7 +104,8 @@ the GPT is not yet established communication with the server.
    - Begin by listing all files from ${envParsedWithTypes.USER_PROJECT_CONTAINER_LOCATION}
      to understand the project's structure. Don't list the contents of the files yet. 
      First, list the top-level filenames. Don't list all files recursively as you will
-     run into file count limits with directories such as node_modules.
+     run into file count limits with directories such as node_modules. Do list files iteratively in depth and feel 
+     feel to use compound search and list commands. 
 
  **Identify Project Type**:
    - Look for indicative files like \`package.json\` for JavaScript
@@ -112,7 +113,8 @@ the GPT is not yet established communication with the server.
 
  **Find Lock Files**:
    - Check for lock files such as \`package-lock.json\`, \`yarn.lock\`,
-     or \`bun.lock\` if it's a JavaScript project.
+     or \`bun.lock\` if it's a JavaScript project, or \`Cargo.lock\` if it's a 
+     Rust project, etc
 
  **Examine Key Files**:
    - Consider reading key files like \`package.json\` or \`cargo.toml\`
