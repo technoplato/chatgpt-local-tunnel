@@ -1,5 +1,7 @@
+import os
+import sys
 import json
-from typing import Dict, List, Union, TypedDict
+from typing import Dict, List, Union, TypedDict, Tuple
 import argparse
 
 # Type definitions
@@ -82,27 +84,66 @@ def compare_hunks_to_files(searches: Dict[str, List[List[str]]], file_system: Fi
 
     return results
 
+def replace_hunks_in_files(searches: Dict[str, List[List[str]]], replacements: Dict[str, List[List[str]]], file_system: FileSystem) -> Tuple[SearchResult, Dict[str, str]]:
+    search_results = compare_hunks_to_files(searches, file_system)
+    updated_files = file_system.copy()
+
+    for file_name, result in search_results.items():
+        if "error" in result:
+            continue
+
+        file_lines = updated_files[file_name].split('\n')
+        for hunk_index, hunk_result in enumerate(result["hunks"]):
+            if hunk_result["errors"]:
+                continue
+
+            replacement_lines = replacements[file_name][hunk_index][0].split('\n')
+            start_line = hunk_result["matches"][0]["fileLineNum"] - 1
+            end_line = hunk_result["matches"][-1]["fileLineNum"]
+
+            file_lines[start_line:end_line] = replacement_lines
+
+        updated_files[file_name] = '\n'.join(file_lines)
+
+    return search_results, updated_files
+
 def read_file(file_path: str) -> str:
     with open(file_path, 'r') as f:
         return f.read()
 
+def write_file(file_path: str, content: str) -> None:
+    with open(file_path, 'w') as f:
+        f.write(content)
+
 def main():
-    parser = argparse.ArgumentParser(description="Search for hunks in files.")
+    parser = argparse.ArgumentParser(description="Search for hunks in files and optionally replace them.")
     parser.add_argument("file_path", help="Path to the file to search in")
-    parser.add_argument("hunks", nargs="+", help="Hunks to search for")
+    parser.add_argument("search_hunks", nargs="+", help="Hunks to search for")
+    parser.add_argument("--replace", nargs="+", help="Hunks to replace with (if specified, must match the number of search hunks)")
     args = parser.parse_args()
 
     file_system = {args.file_path: read_file(args.file_path)}
-    searches = {args.file_path: [[hunk] for hunk in args.hunks]}
+    searches = {args.file_path: [[hunk] for hunk in args.search_hunks]}
 
-    # Example of how to pass a multi-line hunk with quotes from the command line:
-    # python hunk_search.py path/to/your/file.txt "def example_function():
-    #     print(\"This is a multi-line hunk\")
-    #     print('It contains both \"double\" and \'single\' quotes')
-    #     return None"
+    if args.replace:
+        if len(args.replace) != len(args.search_hunks):
+            print("Error: The number of replacement hunks must match the number of search hunks.")
+            return
 
-    result = compare_hunks_to_files(searches, file_system)
-    print(json.dumps(result, indent=2))
+        replacements = {args.file_path: [[hunk] for hunk in args.replace]}
+        search_results, updated_files = replace_hunks_in_files(searches, replacements, file_system)
+
+        if any("error" in result for result in search_results.values()) or \
+           any(hunk["errors"] for result in search_results.values() if "hunks" in result for hunk in result["hunks"]):
+            print("Errors occurred during search. Replacement aborted.")
+            print(json.dumps(search_results, indent=2))
+        else:
+            write_file(args.file_path, updated_files[args.file_path])
+            print("Replacement successful.")
+            print(json.dumps(search_results, indent=2))
+    else:
+        result = compare_hunks_to_files(searches, file_system)
+        print(json.dumps(result, indent=2))
 
 if __name__ == '__main__':
     main()
