@@ -80,8 +80,8 @@ app.post('/files', async (req, res) => {
 
       fs.writeFileSync(filePath, fileContent)
       logger.info(`File ${name} written successfully to ${filePath}`)
-      logger.debug(
-        `File content: ${fileContent.substring(0, 100)}...`,
+      logger.info(
+        `File content: ${fileContent.substring(fileContent.length - 101, fileContent.length - 1)}...`,
       ) // Log first 100 characters of file content
       processedFiles.push(name)
 
