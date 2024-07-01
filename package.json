@@ -3,6 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
+    "tunnel:self": "./start.sh .",
     "alive:check": "curl --write-out \"%{http_code}\" --silent --output /dev/null http://localhost:3000 | grep -q 200 && echo 'Server is up and running.' || echo 'Failed to reach the server.'",
     "ping:hello": "curl http://localhost:3000/"
   },
