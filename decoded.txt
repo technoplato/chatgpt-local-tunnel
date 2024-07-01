@@ -1,7 +1,0 @@
-line1: "This is a double-quoted string."
-line2: 'This is a single-quoted string.'
-line3: `This is a backtick-quoted string.`
-line4: "This is a string with an embedded single quote."
-line5: This is a string with a double quote inside.
-line6: `This is a string with an "embedded double quote" and single quote.`
-line7: `Interpolated string with a variable: ${variable}`

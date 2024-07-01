@@ -1,7 +1,0 @@
-multiline_string = """
-This is a multiline string.
-It has multiple lines of text.
-"""
-
-variable = "example"
-backtick_string = `This is a string with an interpolated variable: ${variable}`
