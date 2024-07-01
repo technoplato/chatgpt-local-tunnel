@@ -1,3 +1,5 @@
+https://platform.openai.com/docs/actions/getting-started
+
 # Getting Started
 
 Creating an action for a GPT takes 3 steps:

@@ -5,6 +5,8 @@ import { checkUserAndRestoreState } from './middlewares/checkUserAndRestoreState
 import { machineStateHandler } from './routes/machineState.ts'
 import { machineSendHandler } from './routes/machineSend.ts'
 import { runCommandHandler } from './routes/runCommand.ts'
+import fs from 'fs'
+import path from 'path'
 
 dotenv.config()
 logger.info('Server started and logger initialized.')
@@ -27,12 +29,136 @@ app.get('/machineState', machineStateHandler)
 app.post('/machineSend', machineSendHandler)
 app.post('/run-command', runCommandHandler)
 
-app.get('/', (req, res) => {
-  logger.info('Hello, World! endpoint was called')
-  res.send('Hello, World!')
+// New endpoint to handle file uploads
+app.post('/files', async (req, res) => {
+  logger.info('POST /files endpoint called')
+  const { openaiFileIdRefs } = req.body
+
+  if (!Array.isArray(openaiFileIdRefs)) {
+    logger.error('Invalid request: openaiFileIdRefs is not an array')
+    return res.status(400).json({
+      error: 'Files are required and must be an array',
+      advice:
+        'Ensure you are sending an array of file references in the "openaiFileIdRefs" field.',
+    })
+  }
+
+  if (openaiFileIdRefs.length === 0) {
+    logger.error('Invalid request: openaiFileIdRefs array is empty')
+    return res.status(400).json({
+      error: 'The openaiFileIdRefs array is empty',
+      advice:
+        'Make sure to create the files in your Python environment first, then include them in the openaiFileIdRefs array when calling this endpoint.',
+    })
+  }
+
+  const processedFiles = []
+  const errors = []
+
+  for (const file of openaiFileIdRefs) {
+    const { name, download_link, mime_type } = file
+    const filePath = path.join('/usr/src/project', name)
+
+    logger.info(`Processing file: ${name}`)
+    logger.debug(
+      `File details: mime_type: ${mime_type}, path: ${filePath}`,
+    )
+
+    try {
+      const response = await fetch(download_link)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const fileContent = await response.text()
+
+      // Ensure the directory exists
+      const dirPath = path.dirname(filePath)
+      if (!fs.existsSync(dirPath)) {
+        logger.info(`Creating directory: ${dirPath}`)
+        fs.mkdirSync(dirPath, { recursive: true })
+      }
+
+      fs.writeFileSync(filePath, fileContent)
+      logger.info(`File ${name} written successfully to ${filePath}`)
+      processedFiles.push(name)
+    } catch (error) {
+      logger.error(`Error processing file ${name}: ${error.message}`)
+      errors.push({ name, error: error.message })
+    }
+  }
+
+  if (errors.length > 0) {
+    logger.warn('Some files could not be processed')
+    res.status(207).json({
+      message: 'Some files were processed, but errors occurred',
+      processedFiles,
+      errors,
+      advice:
+        'Check the errors and ensure all file references are correct. You may need to recreate and reupload the failed files.',
+    })
+  } else {
+    logger.info('All files processed successfully')
+    res.json({
+      message: 'All files processed successfully',
+      processedFiles,
+      advice:
+        'Files have been uploaded successfully. You can now use these files in your Python environment or reference them in other API calls.',
+    })
+  }
+})
+
+// New endpoint to send back files
+app.get('/files', (req, res) => {
+  logger.info('GET /files endpoint called')
+  const { filepath } = req.query
+
+  if (!filepath) {
+    logger.error('Invalid request: filepath is missing')
+    return res.status(400).json({
+      error: 'Filepath is required',
+      advice:
+        'Provide the filepath as a query parameter, e.g., /files?filepath=path/to/your/file.py',
+    })
+  }
+
+  const fullPath = path.join('/usr/src/project', filepath)
+  logger.info(`Attempting to read file: ${fullPath}`)
+
+  if (!fs.existsSync(fullPath)) {
+    logger.error(`File not found: ${fullPath}`)
+    return res.status(404).json({
+      error: 'File not found',
+      advice:
+        "Check if the file exists and ensure you're using the correct relative path from the /usr/src/project directory.",
+    })
+  }
+
+  try {
+    const fileContent = fs.readFileSync(fullPath, 'utf8')
+    logger.info(`File ${fullPath} read successfully`)
+    res.json({
+      openaiFileResponse: [
+        {
+          name: path.basename(fullPath),
+          mime_type: 'text/plain',
+          content: Buffer.from(fileContent).toString('base64'),
+        },
+      ],
+      advice:
+        'You have successfully retrieved the file. You can now use this content in your Python environment or for further processing.',
+    })
+  } catch (error) {
+    logger.error(`Error reading file ${fullPath}: ${error.message}`)
+    res.status(500).json({
+      error: 'Error reading file',
+      details: error.message,
+      advice:
+        'There was an error reading the file. Check if the file is accessible and not corrupted.',
+    })
+  }
 })
 
 const port = 3000
 app.listen(port, () => {
-  logger.info('Server is running on port ' + port)
+  logger.info(`Server is running on port ${port}`)
 })
