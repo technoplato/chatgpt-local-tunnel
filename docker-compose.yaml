@@ -11,12 +11,17 @@ services:
     environment:
       - PROJECT_PATH=${PROJECT_PATH}
     volumes:
+      # This line mounts the project directory from the host to /usr/src/project in the container
+      # Ensure that ${PROJECT_PATH} is correctly set to the absolute path of your project on the host
       - ${PROJECT_PATH}:/usr/src/project
+      # This line mounts the current directory (where docker-compose.yml is) to /usr/src/app in the container
       - .:/usr/src/app
     ports:
       - "3000:3000"
     command: bun run --hot /usr/src/app/src/server.ts
-
+    # Add this line to make the container wait for user input before exiting
+    # This will keep the container running even if the main process exits
+    tty: true
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -26,3 +31,7 @@ services:
       - "4040:4040"
     depends_on:
       - server
+
+# Add this section to create a named volume for persistent storage
+volumes:
+  project-data:

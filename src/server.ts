@@ -80,7 +80,28 @@ app.post('/files', async (req, res) => {
 
       fs.writeFileSync(filePath, fileContent)
       logger.info(`File ${name} written successfully to ${filePath}`)
+      logger.debug(
+        `File content: ${fileContent.substring(0, 100)}...`,
+      ) // Log first 100 characters of file content
       processedFiles.push(name)
+
+      // Check if the file exists after writing
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath)
+        logger.info(
+          `File ${name} exists after writing. Size: ${stats.size} bytes`,
+        )
+      } else {
+        logger.error(
+          `File ${name} does not exist after attempting to write it`,
+        )
+      }
+
+      // List contents of the directory
+      const dirContents = fs.readdirSync(dirPath)
+      logger.info(
+        `Contents of directory ${dirPath}: ${dirContents.join(', ')}`,
+      )
     } catch (error) {
       logger.error(`Error processing file ${name}: ${error.message}`)
       errors.push({ name, error: error.message })
@@ -136,6 +157,7 @@ app.get('/files', (req, res) => {
   try {
     const fileContent = fs.readFileSync(fullPath, 'utf8')
     logger.info(`File ${fullPath} read successfully`)
+    logger.debug(`File content: ${fileContent.substring(0, 100)}...`) // Log first 100 characters of file content
     res.json({
       openaiFileResponse: [
         {

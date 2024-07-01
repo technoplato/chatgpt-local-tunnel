@@ -13,6 +13,8 @@ fi
 PROJECT_PATH=$(realpath "$1")
 export PROJECT_PATH
 
+echo "Project path: $PROJECT_PATH"
+
 # Check if Docker is running on macOS
 if ! docker info >/dev/null 2>&1; then
   echo "Docker is not running. Starting Docker..."
@@ -41,7 +43,22 @@ fi
 export GIT_USER_NAME
 export GIT_USER_EMAIL
 
+echo "Git user name: $GIT_USER_NAME"
+echo "Git user email: $GIT_USER_EMAIL"
+
 # Pass the environment variables to Docker
 docker-compose down
 GIT_USER_NAME=$GIT_USER_NAME GIT_USER_EMAIL=$GIT_USER_EMAIL docker-compose build --no-cache
 GIT_USER_NAME=$GIT_USER_NAME GIT_USER_EMAIL=$GIT_USER_EMAIL docker-compose up
+
+# After Docker Compose is up, check the contents of the project directory
+echo "Contents of $PROJECT_PATH:"
+ls -la "$PROJECT_PATH"
+
+# Check Docker container status
+echo "Docker container status:"
+docker-compose ps
+
+# Print Docker logs
+echo "Docker logs:"
+docker-compose logs
