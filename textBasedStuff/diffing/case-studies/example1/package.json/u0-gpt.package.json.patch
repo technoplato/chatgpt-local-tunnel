@@ -1,0 +1,25 @@
+--- diffing/case-studies/example1/base/package.json
++++ diffing/case-studies/example1/changed/package.json
+@@ ... @@
+@@ ... @@
+-  "name": "example",
+-  "version": "1.0.0",
+-  "description": "An example project",
++  "name": "example_changed",
++  "version": "2.0.0",
++  "description": "An updated example project",
+@@ ... @@
+@@ ... @@
+-    "test": "echo \"Error: no test specified\" && exit 1"
++    "test": "echo \"Error: no test specified\" && exit 1",
++    "start": "node index.js"
+@@ ... @@
+@@ ... @@
+-  "author": "Your Name",
+-  "license": "ISC"
++  "author": "Your New Name",
++  "license": "MIT",
++  "dependencies": {
++    "express": "^4.17.1"
++  }
+

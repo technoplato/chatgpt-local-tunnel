@@ -1,0 +1,4 @@
+"searchString": "
+ ## Contents\n - Rust source code\n - Cargo.toml\n - package.json\n - TypeScript file\n - README\n# Example Project\nThis is an example project to test various diffing strategies.",
+"originalContent": "# Example Project\n\nThis is an example project to test various diffing strategies.\n\n
+## Contents\n\n- Rust source code\n- Cargo.toml\n- package.json\n- TypeScript file\n- README\n\n"

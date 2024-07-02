@@ -1,0 +1,15 @@
+--- /diffing/case-studies/example1/cargo.toml/base.Cargo.toml
++++ /diffing/case-studies/example1/cargo.toml/changed.Cargo.toml
+@@ ... @@
+ [package]
+-name = "example"
+-version = "0.1.0"
+-authors = ["Your Name <you@example.com>"]
++name = "example_changed"
++version = "0.2.0"
++authors = ["Your New Name <newemail@example.com>"]
+ edition = "2018"
+ 
+ [dependencies]
++serde = "1.0"
++

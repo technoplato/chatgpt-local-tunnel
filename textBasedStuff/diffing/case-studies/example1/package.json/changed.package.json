@@ -1,0 +1,15 @@
+{
+  "name": "example_changed",
+  "version": "2.0.0",
+  "description": "An updated example project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Your New Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}

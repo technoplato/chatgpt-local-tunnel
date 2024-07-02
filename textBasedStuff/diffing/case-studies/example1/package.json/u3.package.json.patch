@@ -1,0 +1,24 @@
+--- /project/diffing/case-studies/example1/package.json/base.package.json	2024-06-06 23:30:49.319690756 +0000
++++ /project/diffing/case-studies/example1/package.json/changed.package.json	2024-06-06 23:35:49.377392022 +0000
+@@ -1,11 +1,15 @@
+ {
+-  "name": "example",
+-  "version": "1.0.0",
+-  "description": "An example project",
++  "name": "example_changed",
++  "version": "2.0.0",
++  "description": "An updated example project",
+   "main": "index.js",
+   "scripts": {
+-    "test": "echo \"Error: no test specified\" && exit 1"
++    "test": "echo \"Error: no test specified\" && exit 1",
++    "start": "node index.js"
+   },
+-  "author": "Your Name",
+-  "license": "ISC"
++  "author": "Your New Name",
++  "license": "MIT",
++  "dependencies": {
++    "express": "^4.17.1"
++  }
+ }

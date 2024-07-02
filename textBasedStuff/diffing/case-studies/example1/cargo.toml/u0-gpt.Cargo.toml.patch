@@ -1,0 +1,13 @@
+--- diffing/case-studies/example1/base/Cargo.toml
++++ diffing/case-studies/example1/changed/Cargo.toml
+@@ ... @@
+-name = "example"
+-version = "0.1.0"
+-authors = ["Your Name <you@example.com>"]
++name = "example_changed"
++version = "0.2.0"
++authors = ["Your New Name <newemail@example.com>"]
+@@ ... @@
+[dependencies]
++serde = "1.0"
+

@@ -1,0 +1,14 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+  redis:
+    image: "redis:alpine"
+  db:
+    image: "postgres:13"
+    environment:
+      POSTGRES_PASSWORD: example
+volumes:
+  db-data:

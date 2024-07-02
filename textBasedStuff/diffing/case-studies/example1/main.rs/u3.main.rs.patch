@@ -1,0 +1,25 @@
+--- /project/diffing/case-studies/example1/main.rs/base.main.rs	2024-06-06 23:31:00.204962282 +0000
++++ /project/diffing/case-studies/example1/main.rs/changed.main.rs	2024-06-06 23:35:59.895138921 +0000
+@@ -1,5 +1,5 @@
+ fn main() {
+-    println!("Hello, world!");
++    println!("Hello, changed world!");
+ }
+ 
+ // More Rust code here to make it about 60 lines long
+@@ -15,6 +15,7 @@
+     #[test]
+     fn test_add() {
+         assert_eq!(add(2, 3), 5);
++        assert_eq!(add(3, 3), 6); // New test
+     }
+ }
+ 
+@@ -47,4 +48,7 @@
+         Some(result) => println!("Divide: {}", result),
+         None => println!("Cannot divide by zero"),
+     }
++
++    // New functionality
++    println!("End of program");
+ }

@@ -1,0 +1,425 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GPT Custom Server API",
+    "version": "1.0.1",
+    "description": "This API allows a custom GPT instance to interact with files, run commands, and manage machine state. It provides detailed feedback and advice for proper usage."
+  },
+  "servers": [
+    {
+      "url": "https://everydaywetunnelin.ngrok.io",
+      "description": "ngrok public URL"
+    }
+  ],
+  "paths": {
+    "/machineState": {
+      "get": {
+        "summary": "Get the current state of the machine with context",
+        "operationId": "getMachineState",
+        "responses": {
+          "200": {
+            "description": "Machine state retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "object",
+                      "properties": {
+                        "gptContextWindow": {
+                          "type": "string"
+                        },
+                        "filesPaths": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/machineSend": {
+      "post": {
+        "x-openai-isConsequential": false,
+        "summary": "Send a command to the GPT",
+        "operationId": "machineSend",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "object"
+                    },
+                    "hints": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files": {
+      "post": {
+        "x-openai-isConsequential": false,
+        "operationId": "postFiles",
+        "summary": "Upload and write source code or patch files to specified paths",
+        "description": "This endpoint allows the GPT to upload source code files or patch files it has generated. The GPT should create the files in its Python environment before uploading.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openaiFileIdRefs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the file with its absolute filepath on the remote system"
+                        },
+                        "id": {
+                          "type": "string",
+                          "description": "Stable identifier for the file"
+                        },
+                        "mime_type": {
+                          "type": "string",
+                          "description": "MIME type of the file"
+                        },
+                        "download_link": {
+                          "type": "string",
+                          "description": "URL to fetch the file"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All files processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "processedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "Partial success - some files processed, some failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "processedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getFiles",
+        "summary": "Retrieve a source code or patch file",
+        "description": "This endpoint allows the GPT to retrieve source code or patch files from the server.",
+        "parameters": [
+          {
+            "name": "filepath",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The path of the file to retrieve, relative to /usr/src/project"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "openaiFileResponse": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "mime_type": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string",
+                            "format": "base64"
+                          }
+                        }
+                      }
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    },
+                    "advice": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run-command": {
+      "post": {
+        "x-openai-isConsequential": false,
+        "summary": "Run an arbitrary shell command and commit changes",
+        "operationId": "runCommand",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "commitMessage": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command executed and changes committed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "output": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

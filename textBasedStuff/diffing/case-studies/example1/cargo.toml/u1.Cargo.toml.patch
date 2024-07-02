@@ -1,0 +1,12 @@
+--- project/diffing/case-studies/example1/cargo.toml/base.Cargo.toml	2024-06-06 23:57:15.609555686 +0000
++++ project/diffing/case-studies/example1/cargo.toml/changed.Cargo.toml	2024-06-06 23:35:45.061381176 +0000
+@@ -2,3 +2,3 @@
+-name = "example"
+-version = "0.1.0"
+-authors = ["Your Name <you@example.com>"]
++name = "example_changed"
++version = "0.2.0"
++authors = ["Your New Name <newemail@example.com>"]
+@@ -7,0 +8,2 @@
++serde = "1.0"
++

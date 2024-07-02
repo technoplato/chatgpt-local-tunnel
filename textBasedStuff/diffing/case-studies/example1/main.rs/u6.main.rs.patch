@@ -1,0 +1,37 @@
+--- /project/diffing/case-studies/example1/main.rs/base.main.rs	2024-06-06 23:31:00.204962282 +0000
++++ /project/diffing/case-studies/example1/main.rs/changed.main.rs	2024-06-06 23:35:59.895138921 +0000
+@@ -1,8 +1,8 @@
+ fn main() {
+-    println!("Hello, world!");
++    println!("Hello, changed world!");
+ }
+ 
+ // More Rust code here to make it about 60 lines long
+ 
+ fn add(a: i32, b: i32) -> i32 {
+     a + b
+@@ -12,12 +12,13 @@
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_add() {
+         assert_eq!(add(2, 3), 5);
++        assert_eq!(add(3, 3), 6); // New test
+     }
+ }
+ 
+ // Additional functions
+ fn subtract(a: i32, b: i32) -> i32 {
+     a - b
+@@ -44,7 +45,10 @@
+     println!("Subtract: {}", subtract(x, y));
+     println!("Multiply: {}", multiply(x, y));
+     match divide(x, y) {
+         Some(result) => println!("Divide: {}", result),
+         None => println!("Cannot divide by zero"),
+     }
++
++    // New functionality
++    println!("End of program");
+ }

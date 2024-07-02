@@ -1,0 +1,15 @@
+--- /project/diffing/case-studies/example1/readme.md/base.README.md	2024-06-06 23:31:14.071392424 +0000
++++ /project/diffing/case-studies/example1/readme.md/changed.README.md	2024-06-06 23:36:13.443713981 +0000
+@@ -1 +1 @@
+-# Example Project
++# Example Project (Changed)
+@@ -3 +3 @@
+-This is an example project to test various diffing strategies.
++This is an updated example project to test various diffing strategies.
+@@ -11,0 +12,6 @@
++
++## Changes
++
++- Added new dependencies in Cargo.toml and package.json
++- Updated the Rust and TypeScript files with additional functionality and tests
++- Modified the README file

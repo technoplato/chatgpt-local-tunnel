@@ -2,21 +2,32 @@ version: '3.8'
 
 services:
   server:
-    build: .
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+      args:
+        - GIT_USER_NAME=${GIT_USER_NAME}
+        - GIT_USER_EMAIL=${GIT_USER_EMAIL}
     environment:
       - PROJECT_PATH=${PROJECT_PATH}
     volumes:
+      # Mount the entire project directory, excluding node_modules
       - ${PROJECT_PATH}:/usr/src/project
-      - .:/usr/src/app
+      # Exclude node_modules from the mount
+      - /usr/src/project/node_modules
     ports:
       - "3000:3000"
-    command: nodemon --watch . /usr/src/app/server.js
+    command: bun run --hot /usr/src/project/src/server.ts
+    tty: true
 
   ngrok:
     image: ngrok/ngrok:latest
-    command: http  server:3000  --authtoken ${NGROK_AUTH} --subdomain ${NGROK_DOMAIN}
+    command: http server:3000 --authtoken ${NGROK_AUTH} --subdomain ${NGROK_DOMAIN}
     restart: unless-stopped
     ports:
       - "4040:4040"
     depends_on:
       - server
+
+volumes:
+  project-data:

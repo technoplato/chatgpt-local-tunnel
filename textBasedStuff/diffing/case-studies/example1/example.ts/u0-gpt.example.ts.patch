@@ -1,0 +1,43 @@
+--- diffing-casestudies/example1/base/example.ts
++++ diffing-casestudies/example1/changed/example.ts
+@@ ... @@
+-console.log("Hello, TypeScript");
++console.log("Hello, TypeScript Changed");
+
+function add(a: number, b: number): number {
+    return a + b;
+}
+
+@@ ... @@
+function subtract(a: number, b: number): number {
+    return a - b;
+}
+
+@@ ... @@
++// New function
++function modulo(a: number, b: number): number {
++    return a % b;
++}
+
+function multiply(a: number, b: number): number {
+    return a * b;
+}
+
+@@ ... @@
+function main() {
+    const x = 10;
+    const y = 5;
+
+    console.log(`Add: ${add(x, y)}`);
+    console.log(`Subtract: ${subtract(x, y)}`);
+    console.log(`Multiply: ${multiply(x, y)}`);
+    const result = divide(x, y);
+    if (result !== null) {
+        console.log(`Divide: ${result}`);
+    } else {
+        console.log("Cannot divide by zero");
+    }
++    console.log(`Modulo: ${modulo(x, y)}`);
+}
+
+main();

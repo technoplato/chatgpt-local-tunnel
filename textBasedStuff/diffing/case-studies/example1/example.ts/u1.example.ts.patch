@@ -1,0 +1,15 @@
+--- /project/diffing/case-studies/example1/example.ts/base.example.ts	2024-06-06 23:31:09.903432663 +0000
++++ /project/diffing/case-studies/example1/example.ts/changed.example.ts	2024-06-06 23:36:09.012583468 +0000
+@@ -1 +1 @@
+-console.log("Hello, TypeScript");
++console.log("Hello, TypeScript Changed");
+@@ -25,0 +26,5 @@
++// New function
++function modulo(a: number, b: number): number {
++    return a % b;
++}
++
+@@ -39,0 +45,3 @@
++
++    // New functionality
++    console.log(`Modulo: ${modulo(x, y)}`);
