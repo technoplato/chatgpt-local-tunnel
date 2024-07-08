@@ -19,6 +19,9 @@ type CoordinatorMachineEvents =
       type: 'gpt.completedInitialProjectUnderstanding'
     }
   | {
+      type: 'gpt.requiredTools.downloaded'
+    }
+  | {
       type: 'gpt.understandsProjectStructure'
       projectBuildInformation: string
     }
@@ -65,7 +68,7 @@ export const coordinatorMachine = setup({
       description: waitingForGptConnectionDescription,
       on: {
         'gpt.firstContact': {
-          target: 'GptDevelopingUnderstanding',
+          target: 'GptGatheringRequiredTools',
         },
       },
       meta: {
@@ -73,6 +76,26 @@ export const coordinatorMachine = setup({
 GPT will never receive hints in this state because
 the GPT is not yet established communication with the server. 
 `,
+      },
+    },
+
+    GptGatheringRequiredTools: {
+      // get the script for creating diffs saved to gpt storage
+      // when done move to gptdevelopingunderstanding
+      on: {
+        'gpt.requiredTools.downloaded': {
+          target: 'GptDevelopingUnderstanding',
+        },
+      },
+
+      meta: {
+        hintsForGpt: `
+        Use the runCommand action to list the contents of the 
+        toolsForGptToDownload directory.
+        Use the getFiles action to download all of those files
+        to your local directory.
+        When finished, send the gpt.requiredTools.downloaded event to machineSend.
+        `,
       },
     },
 
@@ -119,6 +142,8 @@ the GPT is not yet established communication with the server.
  **Examine Key Files**:
    - Consider reading key files like \`package.json\` or \`cargo.toml\`
      to gather project-specific information.
+   - Read them to yourself, do not read them all to the user as that
+     will cause a frustrating experience for the user.
 
  **Conclude Understanding**:
    - Once confident about the project's details (e.g., "React Native
