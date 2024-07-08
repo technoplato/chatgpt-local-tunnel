@@ -27,20 +27,20 @@ const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
 wss.on('connection', (ws) => {
-  logger.info('New WebSocket connection established')
+  console.log('New WebSocket connection established')
 
   ws.on('message', (message) => {
-    logger.info(`Received: ${message}`)
+    console.log(`Received: ${message}`)
     // Broadcast the message to all clients
     wss.clients.forEach((client) => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message)
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message.toString())
       }
     })
   })
 
   ws.on('close', () => {
-    logger.info('WebSocket connection closed')
+    console.log('WebSocket connection closed')
   })
 })
 

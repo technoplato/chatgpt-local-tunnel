@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XState Counter with WebSocket Inspector</title>
+    <title>XState Machine Client</title>
     <script type="module">
         import { createMachine, createActor, assign } from 'https://cdn.jsdelivr.net/npm/xstate@5.14.0/+esm';
 
-        // Counter machine definition
-        const counterMachine = createMachine({
+        const machine = createMachine({
             id: 'counter',
             initial: 'active',
             context: { count: 0 },
@@ -26,78 +25,34 @@
             }
         });
 
-        // WebSocket receiver for the inspector
-        function createWebSocketReceiver(options = {}) {
-            const resolvedOptions = {
-                server: 'wss://everydaywetunnelin.ngrok.io',
-                ...options
-            };
+        const actor = createActor(machine).start();
+        const ws = new WebSocket('wss://everydaywetunnelin.ngrok.io');
 
-            const ws = new WebSocket(resolvedOptions.server);
-
-            ws.onopen = () => {
-                console.log('WebSocket connected to inspector');
-            };
-
-            ws.onmessage = (event) => {
-                if (typeof event.data !== 'string') {
-                    return;
-                }
-                console.log('Received from inspector:', JSON.parse(event.data));
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected from inspector');
-            };
-
-            return {
-                send: (event) => {
-                   console.log('Sending event to inspector:', event);
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify(event));
-                    }
-                }
-            };
-        }
-
-        // Create the WebSocket receiver
-        const receiver = createWebSocketReceiver();
-
-        // Create the actor with the receiver as the inspector
-        const counterActor = createActor(counterMachine, {
-            inspect: (inspectionEvent) => {
-                receiver.send(inspectionEvent);
-            }
-        }).start();
-
-        // UI update function
-        function updateUI() {
-            const countElement = document.getElementById('count');
-            countElement.textContent = counterActor.getSnapshot().context.count;
-        }
-
-        // Event listeners for buttons
-        window.increment = () => {
-            counterActor.send({ type: 'INCREMENT' });
-            updateUI();
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            sendUpdate();
         };
 
-        window.decrement = () => {
-            counterActor.send({ type: 'DECREMENT' });
-            updateUI();
-        };
+        actor.subscribe((state) => {
+            sendUpdate();
+        });
 
-        // Initial UI update
-        window.onload = updateUI;
+        function sendUpdate() {
+            const state = actor.getSnapshot();
+            const update = {
+                value: state.value,
+                context: state.context,
+                nextEvents: state.nextEvents
+            };
+            ws.send(JSON.stringify(update));
+        }
+
+        window.increment = () => actor.send({ type: 'INCREMENT' });
+        window.decrement = () => actor.send({ type: 'DECREMENT' });
     </script>
 </head>
 <body>
-    <h1>XState Counter with WebSocket Inspector</h1>
-    <p>Count: <span id="count">0</span></p>
+    <h1>XState Machine Client</h1>
     <button onclick="increment()">Increment</button>
     <button onclick="decrement()">Decrement</button>
 </body>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XState Visualizer Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #stateValue, #context, #nextEvents { margin-bottom: 20px; }
+        pre { background-color: #f0f0f0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>XState Visualizer Client</h1>
+    <div id="stateValue">
+        <h2>Current State:</h2>
+        <pre id="currentState"></pre>
+    </div>
+    <div id="context">
+        <h2>Context:</h2>
+        <pre id="currentContext"></pre>
+    </div>
+    <div id="nextEvents">
+        <h2>Available Events:</h2>
+        <ul id="eventList"></ul>
+    </div>
+
+    <script>
+        const ws = new WebSocket('wss://everydaywetunnelin.ngrok.io');
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            updateVisualization(data);
+        };
+
+        function updateVisualization(data) {
+            document.getElementById('currentState').textContent = JSON.stringify(data.value, null, 2);
+            document.getElementById('currentContext').textContent = JSON.stringify(data.context, null, 2);
+
+            const eventList = document.getElementById('eventList');
+            eventList.innerHTML = '';
+            data.nextEvents.forEach(event => {
+                const li = document.createElement('li');
+                li.textContent = event;
+                eventList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
