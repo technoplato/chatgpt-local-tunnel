@@ -7,6 +7,8 @@ import { machineSendHandler } from './routes/machineSend.ts'
 import { runCommandHandler } from './routes/runCommand.ts'
 import fs from 'fs'
 import path from 'path'
+import { WebSocketServer } from 'ws'
+import http from 'http'
 
 dotenv.config()
 logger.info('Server started and logger initialized.')
@@ -16,6 +18,30 @@ app.use(express.json())
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*')
   next()
+})
+
+// Create an HTTP server
+const server = http.createServer(app)
+
+// Create a WebSocket server
+const wss = new WebSocketServer({ server })
+
+wss.on('connection', (ws) => {
+  logger.info('New WebSocket connection established')
+
+  ws.on('message', (message) => {
+    logger.info(`Received: ${message}`)
+    // Broadcast the message to all clients
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message)
+      }
+    })
+  })
+
+  ws.on('close', () => {
+    logger.info('WebSocket connection closed')
+  })
 })
 
 app.get('/', (req, res) => {
@@ -181,6 +207,7 @@ app.get('/files', (req, res) => {
 })
 
 const port = 3000
-app.listen(port, () => {
-  logger.info(`Server is running on port ${port}`)
+server.listen(port, () => {
+  logger.info(`HTTP Server is running on port ${port}`)
+  logger.info(`WebSocket Server is running on ws://localhost:${port}`)
 })
