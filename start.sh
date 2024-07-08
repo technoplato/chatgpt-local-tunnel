@@ -41,11 +41,9 @@ echo "Git user email: $GIT_USER_EMAIL"
 # Check if package.json or bun.lockb have changed
 if git diff --quiet HEAD -- package.json bun.lockb; then
   echo "No changes in package.json or bun.lockb. Using cached dependencies."
-  BUILD_ARG="--build"
+  docker-compose up --build
 else
   echo "Changes detected in package.json or bun.lockb. Rebuilding with no cache."
-  BUILD_ARG="--build --no-cache"
+  docker-compose build --no-cache
+  docker-compose up
 fi
-
-# Build and start the containers
-docker-compose up $BUILD_ARG
